@@ -330,8 +330,8 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <div class="chart-box"><div class="card-title">💼 招商业绩排行</div><div class="table-wrap" id="zsRankTable"></div></div>
   </div>
   <div class="chart-grid">
-    <div class="chart-box"><div class="card-title">📊 渠道每日排行 <span class="sub">按日期·销售额降序</span> <select class="input" id="channelRankPeriod" onchange="renderChannelDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="channelDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
-    <div class="chart-box"><div class="card-title">📊 招商每日排行 <span class="sub">按日期·销售额降序</span> <select class="input" id="zsRankPeriod" onchange="renderZSDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="zsDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
+    <div class="chart-box"><div class="card-title">📊 渠道排行 <span class="sub">按销售额降序</span> <select class="input" id="channelRankPeriod" onchange="renderChannelDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="channelDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
+    <div class="chart-box"><div class="card-title">📊 招商排行 <span class="sub">按销售额降序</span> <select class="input" id="zsRankPeriod" onchange="renderZSDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="zsDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
   </div>
   <div class="card"><div class="card-title">🤖 智能洞察</div><div class="insight-list" id="insightList"></div></div>
 </div>
@@ -2346,29 +2346,25 @@ function renderZSPersonnel(){
 function renderChannelDailyRank(){
   const rankPeriod = document.getElementById('channelRankPeriod')?.value || '7';
   let orders = state.orders;
-  if(rankPeriod==='today') orders = orders.filter(o=>o.date===daysAgo(0));
-  else if(rankPeriod==='yesterday') orders = orders.filter(o=>o.date===daysAgo(1));
-  else if(rankPeriod==='month'){ const d=new Date(); const monthStart=d.toISOString().slice(0,7)+'-01'; orders=orders.filter(o=>o.date>=monthStart); }
-  else { const days=parseInt(rankPeriod)||0; if(days) orders=orders.filter(o=>o.date>=daysAgo(days)); }
+  let isSingleDay = false;
+  let dateLabel = '';
+  if(rankPeriod==='today'){ orders = orders.filter(o=>o.date===daysAgo(0)); isSingleDay=true; dateLabel=daysAgo(0); }
+  else if(rankPeriod==='yesterday'){ orders = orders.filter(o=>o.date===daysAgo(1)); isSingleDay=true; dateLabel=daysAgo(1); }
+  else if(rankPeriod==='month'){ const d=new Date(); const monthStart=d.toISOString().slice(0,7)+'-01'; orders=orders.filter(o=>o.date>=monthStart); dateLabel=d.toISOString().slice(0,7); }
+  else { const days=parseInt(rankPeriod)||0; if(days){ orders=orders.filter(o=>o.date>=daysAgo(days)); dateLabel=`近${days}天`; } else { dateLabel='全部'; } }
   const container = document.getElementById('channelDailyRank');
   if(!orders.length){ container.innerHTML = emptyHTML('暂无出单数据'); return; }
   const map = {};
   orders.forEach(o => {
     const ch = getChannel(o); if(!ch) return;
-    const key = ch + '___' + (o.date || '');
-    if(!map[key]) map[key] = { name: ch, date: o.date || '', count: 0, amount: 0, service: 0, comm: 0, talents: new Set() };
-    map[key].count++; map[key].amount += getAmount(o); map[key].service += getServiceFee(o); map[key].comm += getCommission(o); map[key].talents.add(o.talentName);
+    if(!map[ch]) map[ch] = { name: ch, count: 0, amount: 0, service: 0, comm: 0, talents: new Set() };
+    map[ch].count++; map[ch].amount += getAmount(o); map[ch].service += getServiceFee(o); map[ch].comm += getCommission(o); map[ch].talents.add(o.talentName);
   });
-  const arr = Object.values(map).sort((a,b) => (b.date||'').localeCompare(a.date||'') || b.amount - a.amount);
+  const arr = Object.values(map).sort((a,b) => b.amount - a.amount);
   if(!arr.length){ container.innerHTML = emptyHTML('暂无渠道数据，请先为达人分配渠道'); return; }
-  const byDate = {};
-  arr.forEach(r => { if(!byDate[r.date]) byDate[r.date] = []; byDate[r.date].push(r); });
-  Object.values(byDate).forEach(list => list.sort((a,b) => b.amount - a.amount));
-  container.innerHTML = `<table><thead><tr><th>日期</th><th>渠道人员</th><th>达人数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map(r => {
-    const sameDate = byDate[r.date];
-    const rank = sameDate.indexOf(r);
-    const rankTag = rank < 3 ? `<span class="ranking r${rank+1}">${rank+1}</span>` : `<span class="ranking rn">${rank+1}</span>`;
-    return `<tr><td>${r.date}</td><td>${rankTag} <b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
+  container.innerHTML = `<table><thead><tr><th>排名</th><th>渠道人员</th><th>达人数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
+    const rankTag = i < 3 ? `<span class="ranking r${i+1}">${i+1}</span>` : `<span class="ranking rn">${i+1}</span>`;
+    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
@@ -2384,20 +2380,14 @@ function renderZSDailyRank(){
   const map = {};
   orders.forEach(o => {
     const zs = getZhaoshang(o); if(!zs) return;
-    const key = zs + '___' + (o.date || '');
-    if(!map[key]) map[key] = { name: zs, date: o.date || '', count: 0, amount: 0, service: 0, comm: 0, talents: new Set() };
-    map[key].count++; map[key].amount += getAmount(o); map[key].service += getServiceFee(o); map[key].comm += getCommission(o); map[key].talents.add(o.talentName);
+    if(!map[zs]) map[zs] = { name: zs, count: 0, amount: 0, service: 0, comm: 0, talents: new Set() };
+    map[zs].count++; map[zs].amount += getAmount(o); map[zs].service += getServiceFee(o); map[zs].comm += getCommission(o); map[zs].talents.add(o.talentName);
   });
-  const arr = Object.values(map).sort((a,b) => (b.date||'').localeCompare(a.date||'') || b.amount - a.amount);
+  const arr = Object.values(map).sort((a,b) => b.amount - a.amount);
   if(!arr.length){ container.innerHTML = emptyHTML('暂无招商数据，请先为达人分配招商'); return; }
-  const byDate = {};
-  arr.forEach(r => { if(!byDate[r.date]) byDate[r.date] = []; byDate[r.date].push(r); });
-  Object.values(byDate).forEach(list => list.sort((a,b) => b.amount - a.amount));
-  container.innerHTML = `<table><thead><tr><th>日期</th><th>招商人员</th><th>达人数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map(r => {
-    const sameDate = byDate[r.date];
-    const rank = sameDate.indexOf(r);
-    const rankTag = rank < 3 ? `<span class="ranking r${rank+1}">${rank+1}</span>` : `<span class="ranking rn">${rank+1}</span>`;
-    return `<tr><td>${r.date}</td><td>${rankTag} <b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
+  container.innerHTML = `<table><thead><tr><th>排名</th><th>招商人员</th><th>达人数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
+    const rankTag = i < 3 ? `<span class="ranking r${i+1}">${i+1}</span>` : `<span class="ranking rn">${i+1}</span>`;
+    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
