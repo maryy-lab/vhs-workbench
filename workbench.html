@@ -1693,6 +1693,7 @@ function renderDashboard(){
   const totalComm = orders.reduce((s,o)=>s+getCommission(o),0);
   const totalService = orders.reduce((s,o)=>s+getServiceFee(o),0);
   const activeTalents = new Set(orders.map(o=>o.talentName)).size;
+  const activeProducts = new Set(orders.map(o=>o.productId).filter(Boolean)).size;
   const prevSales = prevOrders.reduce((s,o)=>s+getAmount(o),0);
   const prevComm = prevOrders.reduce((s,o)=>s+getCommission(o),0);
   const prevOrdersN = prevOrders.length;
@@ -1704,7 +1705,8 @@ function renderDashboard(){
     <div class="stat-card"><div class="icon">📦</div><div class="label">总出单数</div><div class="value">${fmtNum(totalOrders)}</div>${prevOrdersN?`<div class="change ${orderChange>=0?'up':'down'}">${orderChange>=0?'▲':'▼'} ${Math.abs(orderChange).toFixed(1)}% 环比</div>`:''}</div>
     <div class="stat-card"><div class="icon">💰</div><div class="label">总销售额</div><div class="value">${fmtMoney(totalSales)}</div>${prevSales?`<div class="change ${salesChange>=0?'up':'down'}">${salesChange>=0?'▲':'▼'} ${Math.abs(salesChange).toFixed(1)}% 环比</div>`:''}</div>
     <div class="stat-card"><div class="icon">🏢</div><div class="label">总服务费</div><div class="value">${fmtMoney(totalService)}</div><div class="change up">机构实收</div></div>
-    <div class="stat-card"><div class="icon">👥</div><div class="label">出单达人数</div><div class="value">${activeTalents}</div><div class="change up">共 ${state.talents.length} 位达人</div></div>`;
+    <div class="stat-card"><div class="icon">👥</div><div class="label">出单达人数</div><div class="value">${activeTalents}</div><div class="change up">共 ${state.talents.length} 位达人</div></div>
+    <div class="stat-card"><div class="icon">🛍️</div><div class="label">出单商品数</div><div class="value">${activeProducts}</div><div class="change up">不同商品</div></div>`;
 
   renderTrendChart(orders, period);
   renderChannelChart(orders);
@@ -1751,24 +1753,24 @@ function renderChannelChart(orders){
 
 function renderTalentRankTable(orders){
   const map={};
-  orders.forEach(o=>{ const n=o.talentName||'未知'; if(!map[n]) map[n]={name:n,channel:getChannel(o),zs:getZhaoshang(o),count:0,amount:0,service:0}; map[n].count++; map[n].amount+=getAmount(o); map[n].service+=getServiceFee(o); });
+  orders.forEach(o=>{ const n=o.talentName||'未知'; if(!map[n]) map[n]={name:n,channel:getChannel(o),zs:getZhaoshang(o),count:0,amount:0,service:0,products:new Set()}; map[n].count++; map[n].amount+=getAmount(o); map[n].service+=getServiceFee(o); if(o.productId) map[n].products.add(o.productId); });
   const arr=Object.values(map).sort((a,b)=>b.amount-a.amount).slice(0,10);
   const max=arr[0]?.amount||1;
   if(!arr.length){ document.getElementById('talentRankTable').innerHTML=emptyHTML('暂无出单数据'); return; }
-  document.getElementById('talentRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>达人</th><th>渠道</th><th>出单</th><th>销售额</th><th>服务费</th><th>占比</th></tr></thead><tbody>${arr.map((t,i)=>{
+  document.getElementById('talentRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>达人</th><th>渠道</th><th>出单</th><th>商品数</th><th>销售额</th><th>服务费</th><th>占比</th></tr></thead><tbody>${arr.map((t,i)=>{
     const r=i<3?`r${i+1}`:'rn'; const ratio=(t.amount/max*100).toFixed(0);
-    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td><span class="tag tag-blue">${esc(t.channel||'-')}</span></td><td>${t.count}单</td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td class="text-r">${fmtMoney(t.service)}</td><td><span class="mini-bar" style="width:${ratio*0.6}px"></span>${ratio}%</td></tr>`;
+    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td><span class="tag tag-blue">${esc(t.channel||'-')}</span></td><td>${t.count}单</td><td>${t.products.size}</td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td class="text-r">${fmtMoney(t.service)}</td><td><span class="mini-bar" style="width:${ratio*0.6}px"></span>${ratio}%</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
 function renderZSRankTable(orders){
   const map={};
-  orders.forEach(o=>{ const n=getZhaoshang(o)||'未分配'; if(!map[n]) map[n]={name:n,talents:new Set(),count:0,amount:0,service:0}; map[n].talents.add(o.talentName); map[n].count++; map[n].amount+=getAmount(o); map[n].service+=getServiceFee(o); });
+  orders.forEach(o=>{ const n=getZhaoshang(o)||'未分配'; if(!map[n]) map[n]={name:n,talents:new Set(),count:0,amount:0,service:0,products:new Set()}; map[n].talents.add(o.talentName); map[n].count++; map[n].amount+=getAmount(o); map[n].service+=getServiceFee(o); if(o.productId) map[n].products.add(o.productId); });
   const arr=Object.values(map).sort((a,b)=>b.amount-a.amount);
   if(!arr.length){ document.getElementById('zsRankTable').innerHTML=emptyHTML('暂无招商数据'); return; }
-  document.getElementById('zsRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>招商</th><th>达人数</th><th>出单</th><th>销售额</th><th>服务费</th></tr></thead><tbody>${arr.map((t,i)=>{
+  document.getElementById('zsRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>招商</th><th>达人数</th><th>商品数</th><th>出单</th><th>销售额</th><th>服务费</th></tr></thead><tbody>${arr.map((t,i)=>{
     const r=i<3?`r${i+1}`:'rn';
-    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td>${t.talents.size}</td><td>${t.count}单</td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td class="text-r">${fmtMoney(t.service)}</td></tr>`;
+    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td>${t.talents.size}</td><td>${t.products.size}</td><td>${t.count}单</td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td class="text-r">${fmtMoney(t.service)}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
@@ -2357,14 +2359,14 @@ function renderChannelDailyRank(){
   const map = {};
   orders.forEach(o => {
     const ch = getChannel(o); if(!ch) return;
-    if(!map[ch]) map[ch] = { name: ch, count: 0, amount: 0, service: 0, comm: 0, talents: new Set() };
-    map[ch].count++; map[ch].amount += getAmount(o); map[ch].service += getServiceFee(o); map[ch].comm += getCommission(o); map[ch].talents.add(o.talentName);
+    if(!map[ch]) map[ch] = { name: ch, count: 0, amount: 0, service: 0, comm: 0, talents: new Set(), products: new Set() };
+    map[ch].count++; map[ch].amount += getAmount(o); map[ch].service += getServiceFee(o); map[ch].comm += getCommission(o); map[ch].talents.add(o.talentName); if(o.productId) map[ch].products.add(o.productId);
   });
   const arr = Object.values(map).sort((a,b) => b.amount - a.amount);
   if(!arr.length){ container.innerHTML = emptyHTML('暂无渠道数据，请先为达人分配渠道'); return; }
-  container.innerHTML = `<table><thead><tr><th>排名</th><th>渠道人员</th><th>达人数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
+  container.innerHTML = `<table><thead><tr><th>排名</th><th>渠道人员</th><th>达人数</th><th>商品数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
     const rankTag = i < 3 ? `<span class="ranking r${i+1}">${i+1}</span>` : `<span class="ranking rn">${i+1}</span>`;
-    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
+    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td>${r.products.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
@@ -2380,14 +2382,14 @@ function renderZSDailyRank(){
   const map = {};
   orders.forEach(o => {
     const zs = getZhaoshang(o); if(!zs) return;
-    if(!map[zs]) map[zs] = { name: zs, count: 0, amount: 0, service: 0, comm: 0, talents: new Set() };
-    map[zs].count++; map[zs].amount += getAmount(o); map[zs].service += getServiceFee(o); map[zs].comm += getCommission(o); map[zs].talents.add(o.talentName);
+    if(!map[zs]) map[zs] = { name: zs, count: 0, amount: 0, service: 0, comm: 0, talents: new Set(), products: new Set() };
+    map[zs].count++; map[zs].amount += getAmount(o); map[zs].service += getServiceFee(o); map[zs].comm += getCommission(o); map[zs].talents.add(o.talentName); if(o.productId) map[zs].products.add(o.productId);
   });
   const arr = Object.values(map).sort((a,b) => b.amount - a.amount);
   if(!arr.length){ container.innerHTML = emptyHTML('暂无招商数据，请先为达人分配招商'); return; }
-  container.innerHTML = `<table><thead><tr><th>排名</th><th>招商人员</th><th>达人数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
+  container.innerHTML = `<table><thead><tr><th>排名</th><th>招商人员</th><th>达人数</th><th>商品数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
     const rankTag = i < 3 ? `<span class="ranking r${i+1}">${i+1}</span>` : `<span class="ranking rn">${i+1}</span>`;
-    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
+    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td>${r.products.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
