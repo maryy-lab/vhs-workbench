@@ -445,6 +445,13 @@ label{font-size:13px;color:var(--muted);font-weight:500}
 
 <!-- ===== Sync Settings ===== -->
 <div class="tab-content" id="tab-sync">
+  <div id="cloudModeBanner" style="display:none;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;padding:20px;border-radius:12px;margin-bottom:16px">
+    <div style="font-size:18px;font-weight:600;margin-bottom:8px">☁️ 云端数据模式</div>
+    <div style="font-size:14px;opacity:.9;line-height:1.8">
+      数据由 GitHub Actions 每 30 分钟自动从微信联盟 API 拉取并更新，无需手动同步。<br>
+      如需在本地运行同步服务（更快的数据更新、API配置、商品同步等功能），请在电脑上双击「启动工作台.bat」。
+    </div>
+  </div>
   <div class="card">
     <div class="card-title">🔑 联盟带货机构API配置 <span class="sub">在「联盟带货机构管理平台 - 设置 - 开放信息」获取</span></div>
     <div class="config-grid">
@@ -1374,6 +1381,9 @@ async function loadData() {
             if(data.personnel){
               state.personnel = data.personnel;
               try { localStorage.setItem(PERSONNEL_LS_KEY, JSON.stringify(data.personnel)); } catch(e){}
+            }
+            if(data._meta){
+              state._meta = data._meta;
             }
             githubDataLoaded = true;
             cloudDataLoaded = true;
@@ -2569,10 +2579,24 @@ function renderAnaInsights(orders, period){
 
 // ===================== Sync Tab =====================
 async function renderSyncTab(){
+  const cloudBanner = document.getElementById('cloudModeBanner');
   if(!Server.connected){
-    document.getElementById('syncStatusText').textContent = '同步服务未启动';
+    if(githubDataLoaded){
+      // 云端数据模式：显示云端数据统计
+      if(cloudBanner) cloudBanner.style.display = 'block';
+      document.getElementById('syncStatusText').textContent = '☁️ 云端数据模式（每30分钟自动更新）';
+      document.getElementById('syncTotalOrders').textContent = state.orders.length || 0;
+      document.getElementById('syncTotalTalents').textContent = state.talents.length || 0;
+      document.getElementById('syncTotalProducts').textContent = state.products?.length || 0;
+      const meta = state._meta || {};
+      document.getElementById('syncLastTime').textContent = meta.time ? new Date(meta.time).toLocaleString('zh-CN') : '已加载';
+    } else {
+      if(cloudBanner) cloudBanner.style.display = 'none';
+      document.getElementById('syncStatusText').textContent = '同步服务未启动';
+    }
     return;
   }
+  if(cloudBanner) cloudBanner.style.display = 'none';
   try {
     const status = await Server.getStatus();
     document.getElementById('syncTotalOrders').textContent = status.totalOrders || 0;
@@ -2626,14 +2650,29 @@ async function testConnection(){
 }
 
 async function triggerSync(){
-  if(!Server.connected){ toast('同步服务未启动','error'); return; }
+  if(!Server.connected){
+    if(githubDataLoaded){
+      toast('云端数据模式：数据每30分钟自动更新，无需手动同步','info');
+    } else {
+      toast('同步服务未启动','error');
+    }
+    return;
+  }
   // 使用页面跳转触发同步，避免 fetch 被预览面板拦截
   toast('同步已启动，页面即将刷新...','success');
   setTimeout(() => { window.location.href = '/?action=sync'; }, 800);
 }
 
 async function manualSync(){
-  if(!Server.connected){ toast('请先启动同步服务','error'); switchTab('sync'); return; }
+  if(!Server.connected){
+    if(githubDataLoaded){
+      toast('云端数据模式：数据每30分钟自动更新，无需手动同步','info');
+    } else {
+      toast('请先启动同步服务','error');
+      switchTab('sync');
+    }
+    return;
+  }
   await triggerSync();
 }
 
