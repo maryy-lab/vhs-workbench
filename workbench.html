@@ -1469,7 +1469,7 @@ async function saveConfigToGitHub(){
     if(!resp.ok) throw new Error('读取云端数据失败: ' + resp.status);
     const fileData = await resp.json();
     const sha = fileData.sha;
-    const existing = JSON.parse(atob(fileData.content));
+    const existing = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
 
     // 2. 用本地配置覆盖（保留云端订单，只更新配置部分）
     existing.users = state.users || {};
