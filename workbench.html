@@ -340,6 +340,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
 <div class="tab-content" id="tab-orders">
   <div class="toolbar">
     <button class="btn btn-primary btn-sm edit-only" onclick="openOrderModal()">➕ 添加出单记录</button>
+    <button class="btn btn-success btn-sm edit-only" id="orderSaveMappingBtn" onclick="saveOrderMappings()" style="display:none">💾 保存渠道/招商修改</button>
     <div class="spacer"></div>
     <input class="input" id="orderSearch" placeholder="搜索达人/商品..." oninput="renderOrders()" style="width:180px">
     <select class="input" id="filterChannel" onchange="renderOrders()" style="min-width:120px"><option value="">全部渠道</option></select>
@@ -1777,6 +1778,10 @@ function renderInsights(orders, prevOrders, period){
 // ===================== Orders =====================
 function renderOrders(){
   populateFilters();
+  pendingMappings = {};
+  pendingProductMappings = {};
+  const orderSaveBtn = document.getElementById('orderSaveMappingBtn');
+  if(orderSaveBtn) orderSaveBtn.style.display = 'none';
   const search=(document.getElementById('orderSearch').value||'').toLowerCase();
   const fc=document.getElementById('filterChannel').value, fz=document.getElementById('filterZS').value;
   const period=document.getElementById('filterPeriod').value;
@@ -1789,18 +1794,67 @@ function renderOrders(){
   if(fa==='unassigned') orders=orders.filter(o=>!getChannel(o)||!getZhaoshang(o));
   orders.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   if(!orders.length){ document.getElementById('ordersTable').innerHTML=emptyHTML('暂无出单记录'); document.getElementById('ordersSummary').textContent=''; return; }
-  document.getElementById('ordersTable').innerHTML=`<table><thead><tr><th>日期</th><th>达人</th><th>商品</th><th>渠道</th><th>招商</th><th class="text-r">订单数</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody>${orders.map(o=>{
+  const editable = canEdit();
+  const channels=[...new Set([...(state.personnel?.channels||[]).map(p=>p.name), ...state.talents.map(t=>t.channel), ...Object.values(state.mapping).map(m=>m.channel)].filter(Boolean))];
+  const zsList=[...new Set([...(state.personnel?.zhaoshangs||[]).map(p=>p.name), ...state.talents.map(t=>t.zhaoshang), ...Object.values(state.mapping).map(m=>m.zhaoshang)].filter(Boolean))];
+  // 缓存订单索引用于 onchange 回调
+  window._orderRows = orders;
+  document.getElementById('ordersTable').innerHTML=`<table><thead><tr><th>日期</th><th>达人</th><th>商品</th><th>渠道${editable?' ✏️':''}</th><th>招商${editable?' ✏️':''}</th><th class="text-r">订单数</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody>${orders.map((o,idx)=>{
     const sourceTag = o.source==='api' ? '<span class="tag tag-green">API</span>' : `<span class="tag tag-gray">手动${o.operator?' · '+esc(o.operator):''}</span>`;
     const statusTag = o.commissionStatus ? (o.commissionStatus==='已结算'?'<span class="tag tag-green">已结算</span>':o.commissionStatus==='未结算'?'<span class="tag tag-orange">未结算</span>':'<span class="tag tag-red">取消</span>') : '-';
     const prodImg = o.productImg ? `<img class="product-thumb" src="${esc(o.productImg)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt=""><div class="product-thumb-placeholder" style="display:none">📦</div>` : `<div class="product-thumb-placeholder">📦</div>`;
     const prodName = esc(getProduct(o))||'-';
     const prodId = o.productId ? `<div style="font-size:10px;color:var(--muted);font-family:monospace">${esc(o.productId)}</div>` : '';
     const prodCell = `<div style="display:flex;align-items:center;gap:8px"><div style="flex-shrink:0">${prodImg}</div><div style="min-width:0"><div style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${prodName}</div>${prodId}</div></div>`;
-    return `<tr><td>${o.date||'-'}</td><td><b>${esc(o.talentName)}</b></td><td>${prodCell}</td><td><span class="tag tag-blue">${esc(getChannel(o))||'-'}</span></td><td><span class="tag tag-purple">${esc(getZhaoshang(o))||'-'}</span></td><td class="text-r">${getOrderCount(o)}</td><td class="text-r"><b>${fmtMoney(getAmount(o))}</b></td><td class="text-r">${getServiceFee(o)?fmtMoney(getServiceFee(o)):'-'}</td><td class="text-r">${getCommission(o)?fmtMoney(getCommission(o)):'-'}</td><td>${statusTag}</td><td>${sourceTag}</td><td>${o.source==='api'||!canEdit()?'-':`<button class="btn btn-outline btn-sm" onclick="openOrderModal('${o.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">删除</button>`}</td></tr>`;
+    const curCh = getChannel(o), curZs = getZhaoshang(o);
+    const chCell = editable
+      ? `<select class="inline-edit" onchange="markOrderMappingChanged(${idx},'channel',this.value)" style="width:110px"><option value="">-</option>${channels.map(c=>`<option value="${esc(c)}" ${c===curCh?'selected':''}>${esc(c)}</option>`).join('')}</select>`
+      : `<span class="tag tag-blue">${esc(curCh)||'-'}</span>`;
+    const zsCell = editable
+      ? `<select class="inline-edit" onchange="markOrderMappingChanged(${idx},'zhaoshang',this.value)" style="width:110px"><option value="">-</option>${zsList.map(z=>`<option value="${esc(z)}" ${z===curZs?'selected':''}>${esc(z)}</option>`).join('')}</select>`
+      : `<span class="tag tag-purple">${esc(curZs)||'-'}</span>`;
+    return `<tr><td>${o.date||'-'}</td><td><b>${esc(o.talentName)}</b></td><td>${prodCell}</td><td>${chCell}</td><td>${zsCell}</td><td class="text-r">${getOrderCount(o)}</td><td class="text-r"><b>${fmtMoney(getAmount(o))}</b></td><td class="text-r">${getServiceFee(o)?fmtMoney(getServiceFee(o)):'-'}</td><td class="text-r">${getCommission(o)?fmtMoney(getCommission(o)):'-'}</td><td>${statusTag}</td><td>${sourceTag}</td><td>${o.source==='api'||!canEdit()?'-':`<button class="btn btn-outline btn-sm" onclick="openOrderModal('${o.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">删除</button>`}</td></tr>`;
   }).join('')}</tbody></table>`;
   const totalAmt=orders.reduce((s,o)=>s+getAmount(o),0);
   const totalService=orders.reduce((s,o)=>s+getServiceFee(o),0);
   document.getElementById('ordersSummary').innerHTML=`共 <b>${orders.length}</b> 条记录 | 合计销售额 <b>${fmtMoney(totalAmt)}</b> | 服务费 <b>${fmtMoney(totalService)}</b>`;
+}
+
+function markOrderMappingChanged(idx, field, value){
+  const o = window._orderRows?.[idx];
+  if(!o) return;
+  const talentName = o.talentName;
+  const productId = o.productId || '';
+  if(productId){
+    const pkey = talentName + '|' + productId;
+    if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = { channel: '', zhaoshang: '' };
+    pendingProductMappings[pkey][field] = value;
+  } else {
+    if(!pendingMappings[talentName]) pendingMappings[talentName] = { channel: state.mapping[talentName]?.channel || '', zhaoshang: state.mapping[talentName]?.zhaoshang || '' };
+    pendingMappings[talentName][field] = value;
+  }
+  const btn = document.getElementById('orderSaveMappingBtn');
+  if(btn) btn.style.display = 'inline-flex';
+}
+
+function saveOrderMappings(){
+  const mEntries = Object.entries(pendingMappings);
+  const pEntries = Object.entries(pendingProductMappings);
+  if(!mEntries.length && !pEntries.length){ toast('没有修改需要保存','info'); return; }
+  if(!state.productMapping) state.productMapping = {};
+  mEntries.forEach(([name, val]) => {
+    state.mapping[name] = val;
+    const t = state.talents.find(x=>x.name===name); if(t){ t.channel=val.channel; t.zhaoshang=val.zhaoshang; }
+  });
+  pEntries.forEach(([pkey, val]) => { state.productMapping[pkey] = val; });
+  saveLocalState();
+  debouncedCloudUpload();
+  toast(`已保存 ${mEntries.length + pEntries.length} 条分配修改`,'success');
+  pendingMappings = {};
+  pendingProductMappings = {};
+  const btn = document.getElementById('orderSaveMappingBtn');
+  if(btn) btn.style.display = 'none';
+  renderOrders();
 }
 
 function populateFilters(){
