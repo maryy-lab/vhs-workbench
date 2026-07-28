@@ -189,6 +189,7 @@ function transformOrder(raw) {
     shopAppid: shop.appid || '',
     productTitle: product.title || '',
     productId: product.product_id || '',
+    productImg: product.head_img || '',
     productCount: product.product_cnt || 1,
     salesAmount: (product.actual_payment || 0) / 100,
     serviceAmount: (commission.service_amount || 0) / 100,
