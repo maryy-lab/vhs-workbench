@@ -140,12 +140,20 @@ async function fetchOrderDetail(orderId, skuId) {
 }
 
 // ============ 数据转换 ============
+let _debugLogged = false;
 function transformOrder(raw) {
   const detail = raw.order_detail || {};
   const commission = detail.commission_info || {};
   const product = detail.product_info || {};
   const shop = detail.shop_info || {};
   const orderInfo = detail.order_info || {};
+
+  if (!_debugLogged) {
+    _debugLogged = true;
+    console.log('[DEBUG] product_info keys:', Object.keys(product));
+    console.log('[DEBUG] product_info sample:', JSON.stringify(product).slice(0, 500));
+    console.log('[DEBUG] detail keys:', Object.keys(detail));
+  }
 
   let talentName = '', talentType = '', talentId = '', talentCommission = 0, talentCommissionRatio = 0;
   if (commission.talent_info && commission.talent_info.nickname) {
