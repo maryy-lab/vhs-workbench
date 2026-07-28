@@ -7760,6 +7760,14 @@
     "小宇宙": {
       "password": "123456",
       "role": "viewer"
+    },
+    "zz": {
+      "password": "123456",
+      "role": "viewer"
+    },
+    "LLL": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
@@ -7769,7 +7777,7 @@
     "count": 251,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-28T18:32:37.857Z",
+    "configUpdated": "2026-07-28T18:33:46.107Z",
     "configUpdatedBy": "枝枝"
   }
 }
