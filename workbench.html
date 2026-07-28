@@ -2856,10 +2856,12 @@ window.fetch = function(input, init) {
   init = init || {};
   if (currentUser) {
     init.headers = init.headers || {};
+    // 用户名可能含中文，HTTP header 必须 ISO-8859-1，所以用 encodeURIComponent 编码
+    const safeUser = encodeURIComponent(currentUser);
     if (typeof init.headers === 'object' && !(init.headers instanceof Headers)) {
-      init.headers['X-User'] = currentUser;
+      init.headers['X-User'] = safeUser;
     } else if (init.headers instanceof Headers) {
-      init.headers.set('X-User', currentUser);
+      init.headers.set('X-User', safeUser);
     }
   }
   return _origFetch.call(this, input, init);
