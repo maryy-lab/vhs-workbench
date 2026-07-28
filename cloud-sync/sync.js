@@ -140,7 +140,6 @@ async function fetchOrderDetail(orderId, skuId) {
 }
 
 // ============ 数据转换 ============
-let _debugLogged = false;
 function transformOrder(raw) {
   const detail = raw.order_detail || {};
   const commission = detail.commission_info || {};
@@ -148,12 +147,6 @@ function transformOrder(raw) {
   const shop = detail.shop_info || {};
   const orderInfo = detail.order_info || {};
 
-  if (!_debugLogged) {
-    _debugLogged = true;
-    console.log('[DEBUG] product_info keys:', Object.keys(product));
-    console.log('[DEBUG] product_info sample:', JSON.stringify(product).slice(0, 500));
-    console.log('[DEBUG] detail keys:', Object.keys(detail));
-  }
 
   let talentName = '', talentType = '', talentId = '', talentCommission = 0, talentCommissionRatio = 0;
   if (commission.talent_info && commission.talent_info.nickname) {
@@ -197,7 +190,7 @@ function transformOrder(raw) {
     shopAppid: shop.appid || '',
     productTitle: product.title || '',
     productId: product.product_id || '',
-    productImg: product.head_img || '',
+    productImg: product.thumb_img || '',
     productCount: product.product_cnt || 1,
     salesAmount: (product.actual_payment || 0) / 100,
     serviceAmount: (commission.service_amount || 0) / 100,
