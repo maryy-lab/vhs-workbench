@@ -1297,7 +1297,7 @@ function toast(msg, type='info'){ const el=document.getElementById('toast'); el.
 function fmtMoney(n){ return '¥'+(Number(n)||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtNum(n){ return (Number(n)||0).toLocaleString('zh-CN'); }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
-function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
+function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function pct(cur, prev){ if(!prev||prev===0) return cur>0?100:0; return ((cur-prev)/prev*100); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
