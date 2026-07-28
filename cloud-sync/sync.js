@@ -241,6 +241,30 @@ function applyMapping(orders, mapping) {
   }));
 }
 
+// ============ 从仓库已有的 data.json 读取配置（保留用户在云端做的修改） ============
+async function readExistingConfig() {
+  try {
+    if (fs.existsSync(OUTPUT_FILE)) {
+      const raw = fs.readFileSync(OUTPUT_FILE, 'utf-8');
+      const data = JSON.parse(raw);
+      log(`从已有 data.json 读取配置: ${Object.keys(data.mapping || {}).length} 个映射, ${Object.keys(data.users || {}).length} 个用户, ${(data.personnel?.channels||[]).length} 个渠道, ${(data.personnel?.zhaoshangs||[]).length} 个招商`);
+      return {
+        mapping: data.mapping || {},
+        users: data.users || {},
+        personnel: data.personnel || { channels: [], zhaoshangs: [] },
+        products: data.products || [],
+        productMapping: data.productMapping || {}
+      };
+    }
+  } catch (e) {
+    log(`读取已有 data.json 失败: ${e.message}`);
+  }
+  return {
+    mapping: {}, users: {}, personnel: { channels: [], zhaoshangs: [] },
+    products: [], productMapping: {}
+  };
+}
+
 // ============ 从 jsonblob 下载用户配置（体积小，GET 不会超时） ============
 async function downloadUserConfig() {
   try {
@@ -289,10 +313,21 @@ async function main() {
   console.log('');
 
   try {
-    // 1. 下载用户配置（达人映射、人员、用户等）
-    log('下载用户配置...');
-    const userConfig = await downloadUserConfig();
-    log(`用户配置: ${Object.keys(userConfig.mapping).length} 个映射, ${Object.keys(userConfig.users).length} 个用户`);
+    // 1. 读取已有配置（优先从仓库 data.json，再从 jsonblob 覆盖）
+    log('读取已有配置...');
+    const existingConfig = await readExistingConfig();
+    let userConfig = existingConfig;
+    
+    // 尝试从 jsonblob 下载更新的配置（如果 jsonblob 可用的话）
+    log('尝试从 jsonblob 下载配置...');
+    const blobConfig = await downloadUserConfig();
+    // jsonblob 的配置优先级更高（如果有的话）
+    if (Object.keys(blobConfig.mapping).length > 0) userConfig.mapping = blobConfig.mapping;
+    if (Object.keys(blobConfig.users).length > 0) userConfig.users = blobConfig.users;
+    if (blobConfig.personnel && (blobConfig.personnel.channels?.length || blobConfig.personnel.zhaoshangs?.length)) userConfig.personnel = blobConfig.personnel;
+    if (blobConfig.products.length > 0) userConfig.products = blobConfig.products;
+    if (Object.keys(blobConfig.productMapping).length > 0) userConfig.productMapping = blobConfig.productMapping;
+    log(`最终配置: ${Object.keys(userConfig.mapping).length} 个映射, ${Object.keys(userConfig.users).length} 个用户`);
 
     // 2. 获取订单列表
     const endTime = Math.floor(Date.now() / 1000);
