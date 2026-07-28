@@ -7746,7 +7746,20 @@
   "productMapping": {},
   "personnel": {
     "channels": [],
-    "zhaoshangs": []
+    "zhaoshangs": [
+      {
+        "name": "大海",
+        "contact": "",
+        "note": "",
+        "id": "ms500w7749gtv"
+      },
+      {
+        "name": "太阳花",
+        "contact": "",
+        "note": "",
+        "id": "ms501743l13xn"
+      }
+    ]
   },
   "users": {
     "枝枝": {
@@ -7797,7 +7810,7 @@
     "count": 251,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-28T18:37:17.331Z",
+    "configUpdated": "2026-07-28T18:38:25.718Z",
     "configUpdatedBy": "枝枝"
   }
 }
