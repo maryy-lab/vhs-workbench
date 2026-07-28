@@ -1,0 +1,44 @@
+name: 视频号数据云端同步
+
+on:
+  # 每30分钟自动运行一次
+  schedule:
+    - cron: '*/30 * * * *'
+  # 手动触发
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装依赖
+        run: |
+          cd cloud-sync
+          npm install
+
+      - name: 执行同步
+        env:
+          WX_APPID: ${{ secrets.WX_APPID }}
+          WX_SECRET: ${{ secrets.WX_SECRET }}
+          JSONBLOB_ID: ${{ secrets.JSONBLOB_ID }}
+          SYNC_DAYS: '7'
+        run: node cloud-sync/sync.js
+
+      - name: 提交数据文件
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cloud-sync/data.json
+          git commit -m "📊 自动同步数据 $(date -u '+%Y-%m-%d %H:%M')" || echo "无数据变更"
+          git push
