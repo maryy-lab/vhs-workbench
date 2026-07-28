@@ -1414,8 +1414,14 @@ async function loadData() {
             const apiOrders = data.orders.map(o => ({ ...o, source: 'api' }));
             const localOrders = (state.orders || []).filter(o => o.source !== 'api');
             state.orders = [...apiOrders, ...localOrders];
-            state.mapping = data.mapping || {};
-            state.productMapping = data.productMapping || {};
+            // 合并 mapping：云端 + 本地（本地优先，保留用户刚做的修改）
+            const cloudMapping = data.mapping || {};
+            const localMapping = state.mapping || {};
+            state.mapping = { ...cloudMapping, ...localMapping };
+            // 合并 productMapping：同理
+            const cloudPM = data.productMapping || {};
+            const localPM = state.productMapping || {};
+            state.productMapping = { ...cloudPM, ...localPM };
             state.products = data.products || [];
             const apiTalentNames = new Set((data.talents || []).map(t => t.name));
             const localTalents = (state.talents || []).filter(t => !apiTalentNames.has(t.name));
@@ -1434,7 +1440,8 @@ async function loadData() {
             }
             githubDataLoaded = true;
             cloudDataLoaded = true;
-            console.log('[loadData] 从云端加载成功:', dataUrl, '订单', state.orders.length, '达人', state.talents.length);
+            console.log('[loadData] 从云端加载成功:', dataUrl, '订单', state.orders.length, '达人', state.talents.length, 'mapping', Object.keys(state.mapping).length, 'productMapping', Object.keys(state.productMapping||{}).length);
+            saveLocalState();
           }
         }
       } catch(e) { console.log('[loadData] 数据源失败:', dataUrl, e.message); }
@@ -1872,6 +1879,7 @@ function saveOrderMappings(){
   pEntries.forEach(([pkey, val]) => { state.productMapping[pkey] = val; });
   saveLocalState();
   debouncedCloudUpload();
+  autoSaveCloudConfig();
   toast(`已保存 ${mEntries.length + pEntries.length} 条分配修改`,'success');
   pendingMappings = {};
   pendingProductMappings = {};
