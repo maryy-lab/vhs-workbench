@@ -615,6 +615,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <div class="modal-body">
       <input type="hidden" id="personnelId">
       <input type="hidden" id="personnelType">
+      <div class="form-row full"><div class="form-field"><label>从已有用户选择</label><select class="input" id="pUserSelect" onchange="if(this.value){document.getElementById('pName').value=this.value;}"><option value="">— 手动输入或选择 —</option></select></div></div>
       <div class="form-row full"><div class="form-field"><label>姓名 <span style="color:var(--danger)">*</span></label><input type="text" class="input" id="pName" placeholder="如：张三"></div></div>
       <div class="form-row full"><div class="form-field"><label>联系方式</label><input type="text" class="input" id="pContact" placeholder="微信号/手机号（选填）"></div></div>
       <div class="form-row full"><div class="form-field"><label>备注</label><input type="text" class="input" id="pNote" placeholder="选填"></div></div>
@@ -2297,6 +2298,11 @@ function openPersonnelModal(type, id){
   document.getElementById('pName').value = '';
   document.getElementById('pContact').value = '';
   document.getElementById('pNote').value = '';
+  // 填充已有用户列表
+  const userSel = document.getElementById('pUserSelect');
+  const users = Object.keys(getUsersData() || {}).filter(u => u !== ADMIN_NAME);
+  userSel.innerHTML = '<option value="">— 手动输入或选择 —</option>' + users.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('');
+  userSel.value = '';
   if(id){
     const list = type==='channel' ? (state.personnel?.channels||[]) : (state.personnel?.zhaoshangs||[]);
     const p = list.find(x => x.id === id);
@@ -2306,6 +2312,7 @@ function openPersonnelModal(type, id){
       document.getElementById('pName').value = p.name;
       document.getElementById('pContact').value = p.contact || '';
       document.getElementById('pNote').value = p.note || '';
+      if(users.includes(p.name)) userSel.value = p.name;
     }
   }
   document.getElementById('personnelModal').classList.add('show');
