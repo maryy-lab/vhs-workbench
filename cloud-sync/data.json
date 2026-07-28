@@ -7756,6 +7756,10 @@
     "刘健": {
       "password": "666888",
       "role": "manager"
+    },
+    "小宇宙": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
@@ -7764,6 +7768,8 @@
     "time": "2026-07-28T17:34:23.739Z",
     "count": 251,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-28T18:32:37.857Z",
+    "configUpdatedBy": "枝枝"
   }
 }
