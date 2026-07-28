@@ -7742,7 +7742,20 @@
       "zhaoshang": ""
     }
   ],
-  "mapping": {},
+  "mapping": {
+    "贾铁锤的工厂直选": {
+      "channel": "zz",
+      "zhaoshang": "大海"
+    },
+    "乐子每一天": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
+    },
+    "山村阿刚": {
+      "channel": "魏佳旭",
+      "zhaoshang": "大海"
+    }
+  },
   "productMapping": {},
   "personnel": {
     "channels": [
@@ -7801,6 +7814,12 @@
         "contact": "",
         "note": "",
         "id": "ms501743l13xn"
+      },
+      {
+        "name": "小宇宙",
+        "contact": "",
+        "note": "",
+        "id": "ms51g9ilib02b"
       }
     ]
   },
@@ -7853,7 +7872,7 @@
     "count": 251,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-28T18:44:18.486Z",
+    "configUpdated": "2026-07-28T19:18:08.208Z",
     "configUpdatedBy": "枝枝"
   }
 }
