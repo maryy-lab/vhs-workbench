@@ -322,16 +322,16 @@ label{font-size:13px;color:var(--muted);font-weight:500}
   </div>
   <div class="stat-grid" id="statCards"></div>
   <div class="chart-grid">
-    <div class="chart-box"><div class="card-title">📈 销售趋势<span class="sub" id="trendSub"></span></div><canvas id="chartTrend"></canvas></div>
-    <div class="chart-box"><div class="card-title">🥧 渠道分布</div><canvas id="chartChannel"></canvas></div>
+    <div class="chart-box"><div class="card-title">📊 渠道排行 <span class="sub">按销售额降序</span> <select class="input" id="channelRankPeriod" onchange="renderChannelDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="channelDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
+    <div class="chart-box"><div class="card-title">📊 招商排行 <span class="sub">按销售额降序</span> <select class="input" id="zsRankPeriod" onchange="renderZSDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="zsDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
   </div>
   <div class="chart-grid">
     <div class="chart-box"><div class="card-title">🏆 达人出单排行 TOP10</div><div class="table-wrap" id="talentRankTable"></div></div>
     <div class="chart-box"><div class="card-title">💼 招商业绩排行</div><div class="table-wrap" id="zsRankTable"></div></div>
   </div>
   <div class="chart-grid">
-    <div class="chart-box"><div class="card-title">📊 渠道排行 <span class="sub">按销售额降序</span> <select class="input" id="channelRankPeriod" onchange="renderChannelDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="channelDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
-    <div class="chart-box"><div class="card-title">📊 招商排行 <span class="sub">按销售额降序</span> <select class="input" id="zsRankPeriod" onchange="renderZSDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="zsDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
+    <div class="chart-box"><div class="card-title">📈 销售趋势<span class="sub" id="trendSub"></span></div><canvas id="chartTrend"></canvas></div>
+    <div class="chart-box"><div class="card-title">🥧 渠道分布</div><canvas id="chartChannel"></canvas></div>
   </div>
   <div class="card"><div class="card-title">🤖 智能洞察</div><div class="insight-list" id="insightList"></div></div>
 </div>
