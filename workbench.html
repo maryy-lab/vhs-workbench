@@ -1442,6 +1442,35 @@ const GH_REPO = 'maryy-lab/vhs-workbench';
 const GH_DATA_PATH = 'cloud-sync/data.json';
 const GH_API_BASE = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_DATA_PATH;
 
+// 尝试多个网络途径请求 GitHub API（国内直连 api.github.com 可能失败）
+async function fetchWithFallback(targetUrl, options) {
+  const urls = [
+    targetUrl,
+    'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl),
+  ];
+  let lastError;
+  for (let i = 0; i < urls.length; i++) {
+    try {
+      const resp = await fetch(urls[i], options);
+      return resp;
+    } catch(e) {
+      lastError = e;
+    }
+  }
+  throw lastError || new Error('网络请求失败');
+}
+
+// 从原始字节计算 Git blob SHA（用于绕过 API 读取 SHA）
+async function computeGitBlobSha(bytes) {
+  const encoder = new TextEncoder();
+  const header = encoder.encode('blob ' + bytes.length + '\0');
+  const combined = new Uint8Array(header.length + bytes.length);
+  combined.set(header, 0);
+  combined.set(bytes, header.length);
+  const hashBuffer = await crypto.subtle.digest('SHA-1', combined);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 async function saveConfigToGitHub(){
   const tokenEl = document.getElementById('ghTokenInput');
   const statusEl = document.getElementById('cloudSaveStatus');
@@ -1462,16 +1491,33 @@ async function saveConfigToGitHub(){
   statusEl.style.color = 'var(--primary)';
 
   try {
-    // 1. 读取当前 data.json（获取 SHA 和现有订单数据）
-    const resp = await fetch(GH_API_BASE, {
-      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
-    });
-    if(!resp.ok) throw new Error('读取云端数据失败: ' + resp.status);
-    const fileData = await resp.json();
-    const sha = fileData.sha;
-    const existing = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+    let existing, sha;
 
-    // 2. 用本地配置覆盖（保留云端订单，只更新配置部分）
+    // 方式1：同源读取 data.json（不经过 api.github.com，避免被墙）
+    try {
+      const rawResp = await fetch('cloud-sync/data.json?t=' + Date.now());
+      if (rawResp.ok) {
+        const buffer = await rawResp.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        sha = await computeGitBlobSha(bytes);
+        const text = new TextDecoder('utf-8').decode(bytes);
+        existing = JSON.parse(text);
+      }
+    } catch(e) { /* 同源读取失败，走 API */ }
+
+    // 方式2：通过 API 读取（带代理兜底）
+    if (!existing || !sha) {
+      statusEl.textContent = '正在读取云端数据...';
+      const resp = await fetchWithFallback(GH_API_BASE, {
+        headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
+      });
+      if(!resp.ok) throw new Error('读取云端数据失败: ' + resp.status);
+      const fileData = await resp.json();
+      sha = fileData.sha;
+      existing = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+    }
+
+    // 用本地配置覆盖（保留云端订单，只更新配置部分）
     existing.users = state.users || {};
     existing.personnel = state.personnel || { channels: [], zhaoshangs: [] };
     existing.mapping = state.mapping || {};
@@ -1481,9 +1527,10 @@ async function saveConfigToGitHub(){
     existing._meta.configUpdated = new Date().toISOString();
     existing._meta.configUpdatedBy = currentUser || 'unknown';
 
-    // 3. 编码并上传
+    // 编码并上传
+    statusEl.textContent = '正在上传配置...';
     const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(existing, null, 2))));
-    const putResp = await fetch(GH_API_BASE, {
+    const putResp = await fetchWithFallback(GH_API_BASE, {
       method: 'PUT',
       headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
       body: JSON.stringify({
@@ -1494,8 +1541,9 @@ async function saveConfigToGitHub(){
     });
 
     if(!putResp.ok) {
-      const err = await putResp.json();
-      throw new Error(err.message || '上传失败: ' + putResp.status);
+      let errMsg = '上传失败: ' + putResp.status;
+      try { const err = await putResp.json(); errMsg = err.message || errMsg; } catch(_){}
+      throw new Error(errMsg);
     }
 
     statusEl.textContent = '✅ 已保存到云端，所有设备将能看到更新';
