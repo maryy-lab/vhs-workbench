@@ -7779,7 +7779,15 @@
     },
     "听旧雨": {
       "password": "123456",
-      "role": "manager"
+      "role": "viewer"
+    },
+    "魏佳旭": {
+      "password": "123456",
+      "role": "viewer"
+    },
+    "糖糖": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
@@ -7789,7 +7797,7 @@
     "count": 251,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-28T18:35:14.942Z",
+    "configUpdated": "2026-07-28T18:37:17.331Z",
     "configUpdatedBy": "枝枝"
   }
 }
