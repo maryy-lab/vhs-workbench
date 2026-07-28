@@ -7499,8 +7499,12 @@
   },
   "users": {
     "枝枝": {
-      "password": "123456",
+      "password": "666888",
       "role": "admin"
+    },
+    "刘健": {
+      "password": "666888",
+      "role": "manager"
     }
   },
   "products": [],
@@ -7510,7 +7514,7 @@
     "count": 251,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-28T16:52:24.496Z",
+    "configUpdated": "2026-07-28T17:10:47.005Z",
     "configUpdatedBy": "枝枝"
   }
 }
