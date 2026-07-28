@@ -713,7 +713,8 @@ function connectSSE(){
 
 // ===================== Cloud Sync (多人协作) =====================
 const CLOUD_API = 'https://jsonblob.com/api/jsonBlob';
-const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/maryy-lab/vhs-workbench/main/cloud-sync/data.json';
+const GITHUB_DATA_URL = 'https://cdn.jsdelivr.net/gh/maryy-lab/vhs-workbench@main/cloud-sync/data.json';
+const GITHUB_DATA_FALLBACK = 'https://raw.githubusercontent.com/maryy-lab/vhs-workbench/main/cloud-sync/data.json';
 let githubDataLoaded = false;
 const DEFAULT_ROOM_ID = '019fa181-1038-700a-9d23-38f99c75d982'; // 云端房间ID，所有设备共享用户/映射/人员数据
 let cloudBlobId = null;
@@ -1344,30 +1345,43 @@ async function loadData() {
       } catch(e){}
     } catch (e) { console.error('Load server data failed', e); loadLocalState(); }
   } else {
-    // 优先从 GitHub 云端加载数据
+    // 优先从 GitHub 云端加载数据（jsDelivr CDN 优先，raw备用）
     let cloudDataLoaded = false;
-    try {
-      const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 10000);
-      const res = await fetch(GITHUB_DATA_URL, { signal: ctrl.signal });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.orders && data.orders.length > 0) {
-          const apiOrders = data.orders.map(o => ({ ...o, source: 'api' }));
-          const localOrders = (state.orders || []).filter(o => o.source !== 'api');
-          state.orders = [...apiOrders, ...localOrders];
-          state.mapping = data.mapping || {};
-          state.productMapping = data.productMapping || {};
-          state.products = data.products || [];
-          const apiTalentNames = new Set((data.talents || []).map(t => t.name));
-          const localTalents = (state.talents || []).filter(t => !apiTalentNames.has(t.name));
-          state.talents = [...(data.talents || []), ...localTalents];
-          githubDataLoaded = true;
-          cloudDataLoaded = true;
-          console.log('[loadData] 从GitHub云端加载: 订单', state.orders.length, '达人', state.talents.length);
+    const urls = [GITHUB_DATA_URL, GITHUB_DATA_FALLBACK];
+    for (const dataUrl of urls) {
+      if (cloudDataLoaded) break;
+      try {
+        const ctrl = new AbortController();
+        setTimeout(() => ctrl.abort(), 10000);
+        const res = await fetch(dataUrl, { signal: ctrl.signal, cache: 'no-cache' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.orders && data.orders.length > 0) {
+            const apiOrders = data.orders.map(o => ({ ...o, source: 'api' }));
+            const localOrders = (state.orders || []).filter(o => o.source !== 'api');
+            state.orders = [...apiOrders, ...localOrders];
+            state.mapping = data.mapping || {};
+            state.productMapping = data.productMapping || {};
+            state.products = data.products || [];
+            const apiTalentNames = new Set((data.talents || []).map(t => t.name));
+            const localTalents = (state.talents || []).filter(t => !apiTalentNames.has(t.name));
+            state.talents = [...(data.talents || []), ...localTalents];
+            // 加载用户和人员数据
+            if(data.users && Object.keys(data.users).length > 0){
+              state.users = data.users;
+              try { localStorage.setItem(USERS_LS_KEY, JSON.stringify(data.users)); } catch(e){}
+            }
+            if(data.personnel){
+              state.personnel = data.personnel;
+              try { localStorage.setItem(PERSONNEL_LS_KEY, JSON.stringify(data.personnel)); } catch(e){}
+            }
+            githubDataLoaded = true;
+            cloudDataLoaded = true;
+            console.log('[loadData] 从GitHub云端加载成功: 订单', state.orders.length, '达人', state.talents.length);
+          }
         }
-      }
-    } catch(e) { console.log('[loadData] GitHub云端数据加载失败', e); }
+      } catch(e) { console.log('[loadData] 数据源加载失败:', dataUrl, e); }
+    }
     if (!cloudDataLoaded) {
       loadLocalState();
     }
@@ -1396,6 +1410,16 @@ async function updateConnectionStatus() {
     banner.className = 'banner online';
     const lastSync = status.lastSync ? new Date(status.lastSync).toLocaleString('zh-CN') : '从未';
     bannerText.innerHTML = `✅ 已连接同步服务 | 上次同步: ${lastSync} | 已同步 ${status.totalOrders} 条订单，${status.totalTalents} 位达人`;
+  } else if (githubDataLoaded) {
+    badge.className = 'api-status online';
+    text.textContent = '云端数据';
+    syncBtn.style.display = 'none';
+    banner.className = 'banner online';
+    const orderCount = state.orders.length;
+    const talentCount = state.talents.length;
+    const lastUpdate = state.orders.find(o => o.createdAt)?.createdAt || '';
+    const updateInfo = lastUpdate ? `最近更新: ${new Date(lastUpdate).toLocaleString('zh-CN')}` : '';
+    bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每30分钟自动更新${updateInfo ? ' | ' + updateInfo : ''}`;
   } else if (isCloudMode && cloudBlobId) {
     badge.className = 'api-status online';
     text.textContent = '云端协作';
@@ -1404,20 +1428,12 @@ async function updateConnectionStatus() {
     const orderCount = state.orders.length;
     const talentCount = state.talents.length;
     bannerText.innerHTML = `☁️ 云端协作模式 | ${orderCount} 条订单，${talentCount} 位达人 | 多人实时同步中`;
-  } else if (githubDataLoaded) {
-    badge.className = 'api-status online';
-    text.textContent = '云端数据';
-    syncBtn.style.display = 'none';
-    banner.className = 'banner online';
-    const orderCount = state.orders.length;
-    const talentCount = state.talents.length;
-    bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每30分钟自动更新`;
   } else {
     badge.className = 'api-status offline';
     text.textContent = '离线';
     syncBtn.style.display = 'none';
     banner.className = 'banner offline';
-    bannerText.innerHTML = '⚠️ 离线模式 — 手动录入数据。双击「启动工作台.bat」可启动同步服务，自动同步联盟后台数据。';
+    bannerText.innerHTML = '⚠️ 正在连接云端数据，请稍候... 如长时间未加载，请刷新页面重试。';
   }
 }
 
@@ -2801,6 +2817,7 @@ async function init(){
   // Merge personnel into state for local storage
   try { const raw = localStorage.getItem(LS_KEY); if(raw){ const ls = JSON.parse(raw); if(ls.personnel) state.personnel = ls.personnel; } } catch(e){}
   checkLogin();
+  // 先更新状态（会调用 Server.check() 检测本地服务器）
   await updateConnectionStatus();
   // 检测云端模式（无本地服务器时）
   if(!Server.connected){
@@ -2811,6 +2828,10 @@ async function init(){
     connectSSE();
   }
   await loadData();
+  // 数据加载后重新更新连接状态（GitHub云端数据加载成功后显示"云端数据模式"）
+  if(!Server.connected){
+    await updateConnectionStatus();
+  }
   // 云端模式：数据加载后自动上传到云端
   if(isCloudMode && cloudBlobId){
     debouncedCloudUpload();
