@@ -1,0 +1,12 @@
+{
+  "name": "vhs-cloud-sync",
+  "version": "1.0.0",
+  "description": "视频号出单数据工作台 - GitHub Actions 云端定时同步",
+  "main": "sync.js",
+  "scripts": {
+    "sync": "node sync.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
