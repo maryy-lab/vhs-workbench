@@ -599,6 +599,15 @@ label{font-size:13px;color:var(--muted);font-weight:500}
   </div>
 </div>
 
+<!-- Product Assign Modal -->
+<div class="modal-overlay" id="productAssignModal">
+  <div class="modal" style="width:720px">
+    <div class="modal-header"><h3 id="productAssignTitle">商品渠道分配</h3><button class="modal-close" onclick="document.getElementById('productAssignModal').classList.remove('show')">&times;</button></div>
+    <div class="modal-body" id="productAssignBody" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-footer"><button class="btn btn-outline btn-sm" onclick="document.getElementById('productAssignModal').classList.remove('show')">取消</button><button class="btn btn-primary btn-sm" onclick="saveProductAssign()">保存分配</button></div>
+  </div>
+</div>
+
 <!-- Personnel Modal -->
 <div class="modal-overlay" id="personnelModal">
   <div class="modal" style="width:440px">
@@ -1914,7 +1923,7 @@ function renderTalents(){
       <td class="text-r"><b>${fmtMoney(s.amount)}</b></td>
       <td class="text-r">${s.service?fmtMoney(s.service):'-'}</td>
       <td class="text-r">${s.comm?fmtMoney(s.comm):'-'}</td>
-      <td>${editable?`<button class="btn btn-outline btn-sm" onclick="openTalentModal('${t.id||''}')">详情</button>`:'-'}</td>
+      <td>${editable?`<button class="btn btn-outline btn-sm" onclick="openProductAssign('${esc(t.name)}')">📦 商品分配</button> <button class="btn btn-outline btn-sm" onclick="openTalentModal('${t.id||''}')">详情</button>`:'-'}</td>
     </tr>`;
   }).join('')}</tbody></table>`;
   document.getElementById('talentHint').textContent = editable 
@@ -1952,6 +1961,98 @@ async function saveAllMappings(){
   renderTalents();
 }
 
+// ===================== 商品级渠道分配 =====================
+let pendingProductMappings = {};
+
+function openProductAssign(talentName){
+  const orders = state.orders.filter(o => o.talentName === talentName);
+  if(!orders.length){ toast('该达人暂无出单记录','info'); return; }
+
+  // 按商品分组
+  const productMap = {};
+  orders.forEach(o => {
+    const pid = o.productId || o.product || '';
+    const key = pid || o.product;
+    if(!productMap[key]) productMap[key] = { productId: pid, title: o.product||o.productTitle||'未知商品', img: o.productImg||'', count: 0, amount: 0 };
+    productMap[key].count += getOrderCount(o);
+    productMap[key].amount += getAmount(o);
+  });
+  const products = Object.values(productMap).sort((a,b) => b.amount - a.amount);
+
+  const channels = [...new Set([...(state.personnel?.channels||[]).map(p=>p.name), ...state.talents.map(t=>t.channel), ...Object.values(state.mapping).map(m=>m.channel)].filter(Boolean))];
+  const zsList = [...new Set([...(state.personnel?.zhaoshangs||[]).map(p=>p.name), ...state.talents.map(t=>t.zhaoshang), ...Object.values(state.mapping).map(m=>m.zhaoshang)].filter(Boolean))];
+
+  const talentChannel = state.mapping[talentName]?.channel || state.talents.find(t=>t.name===talentName)?.channel || '';
+  const talentZS = state.mapping[talentName]?.zhaoshang || state.talents.find(t=>t.name===talentName)?.zhaoshang || '';
+
+  pendingProductMappings = {};
+
+  const body = products.map(p => {
+    const pkey = talentName + '|' + p.productId;
+    const pmChannel = state.productMapping?.[pkey]?.channel || '';
+    const pmZS = state.productMapping?.[pkey]?.zhaoshang || '';
+    const curChannel = pmChannel || talentChannel;
+    const curZS = pmZS || talentZS;
+
+    const imgHTML = p.img
+      ? `<img class="product-thumb" src="${esc(p.img)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt=""><div class="product-thumb-placeholder" style="display:none">📦</div>`
+      : `<div class="product-thumb-placeholder">📦</div>`;
+
+    const chOpts = '<option value="">跟随达人</option>' + channels.map(c=>`<option value="${esc(c)}" ${c===curChannel?'selected':''}>${esc(c)}</option>`).join('');
+    const zsOpts = '<option value="">跟随达人</option>' + zsList.map(z=>`<option value="${esc(z)}" ${z===curZS?'selected':''}>${esc(z)}</option>`).join('');
+
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid var(--border)">
+      <div style="flex-shrink:0">${imgHTML}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.title)}</div>
+        <div style="font-size:12px;color:var(--muted)">${p.count}单 · ${fmtMoney(p.amount)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <select class="input" style="width:130px;padding:4px 8px" onchange="markProductMappingChanged('${esc(talentName)}','${esc(p.productId)}','channel',this.value)">
+          ${chOpts}
+        </select>
+        <select class="input" style="width:130px;padding:4px 8px" onchange="markProductMappingChanged('${esc(talentName)}','${esc(p.productId)}','zhaoshang',this.value)">
+          ${zsOpts}
+        </select>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('productAssignTitle').textContent = `📦 ${talentName} 的商品渠道分配`;
+  document.getElementById('productAssignBody').innerHTML = `
+    <div style="background:var(--bg-secondary);padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;color:var(--muted)">
+      达人默认渠道：<b>${esc(talentChannel)||'未设置'}</b> · 默认招商：<b>${esc(talentZS)||'未设置'}</b><br>
+      每个商品可单独指定渠道/招商，选「跟随达人」则使用上方默认值
+    </div>
+    <div style="display:flex;font-size:11px;color:var(--muted);padding:0 10px 6px;margin-bottom:0">
+      <div style="flex:1">商品</div>
+      <div style="width:130px;text-align:center">渠道 / 招商</div>
+    </div>
+    ${body}
+  `;
+  document.getElementById('productAssignModal').classList.add('show');
+}
+
+function markProductMappingChanged(talentName, productId, field, value){
+  const pkey = talentName + '|' + productId;
+  if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = { channel: '', zhaoshang: '' };
+  pendingProductMappings[pkey][field] = value;
+}
+
+function saveProductAssign(){
+  const entries = Object.entries(pendingProductMappings);
+  if(!entries.length){ toast('没有修改需要保存','info'); return; }
+  if(!state.productMapping) state.productMapping = {};
+  entries.forEach(([pkey, val]) => {
+    state.productMapping[pkey] = val;
+  });
+  saveLocalState();
+  debouncedCloudUpload();
+  toast(`已保存 ${entries.length} 条商品级分配`,'success');
+  pendingProductMappings = {};
+  document.getElementById('productAssignModal').classList.remove('show');
+  renderTalents();
+}
 // ===================== Daily Stats =====================
 function renderDaily(){
   const dateVal = document.getElementById('dailyDate').value;
