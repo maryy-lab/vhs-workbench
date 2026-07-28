@@ -1,0 +1,8 @@
+node_modules/
+data/
+config.json
+*.bak
+.workbuddy/
+version.txt
+deploy/
+启动工作台.bat
