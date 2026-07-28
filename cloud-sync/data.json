@@ -7497,13 +7497,20 @@
     "channels": [],
     "zhaoshangs": []
   },
-  "users": {},
+  "users": {
+    "枝枝": {
+      "password": "123456",
+      "role": "admin"
+    }
+  },
   "products": [],
   "_meta": {
     "source": "github-actions",
     "time": "2026-07-28T15:04:53.764Z",
     "count": 251,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-28T16:52:24.496Z",
+    "configUpdatedBy": "枝枝"
   }
 }
