@@ -1906,7 +1906,7 @@ function renderTalents(){
       ? makeSelect(zsList, curZS, '选择招商', `markMappingChanged('${esc(t.name)}','zhaoshang',this.value)`)
       : `<span class="tag tag-purple">${esc(curZS)||'-'}</span>`;
     return `<tr>
-      <td><b>${esc(t.name)}</b>${t.talentId?`<br><span style="font-size:11px;color:var(--muted)">${esc(t.talentId)}</span>`:''}</td>
+      <td><b>${esc(t.name)}</b></td>
       <td>${channelSel}</td>
       <td>${zsSel}</td>
       <td>${typeTag}</td>
