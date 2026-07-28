@@ -452,6 +452,21 @@ label{font-size:13px;color:var(--muted);font-weight:500}
       如需在本地运行同步服务（更快的数据更新、API配置、商品同步等功能），请在电脑上双击「启动工作台.bat」。
     </div>
   </div>
+  <div class="card" id="cloudConfigCard" style="display:none">
+    <div class="card-title">☁️ 云端配置同步 <span class="sub">在云端模式下添加/修改人员、用户、映射后，点此保存到云端</span></div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">GitHub Token（用于写入云端，仅保存在浏览器本地）</label>
+      <input type="password" class="input" id="ghTokenInput" placeholder="ghp_xxxxxxxx..." style="width:100%">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-primary btn-sm" onclick="saveConfigToGitHub()">☁️ 保存配置到云端</button>
+      <span id="cloudSaveStatus" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6">
+      保存后，所有设备打开工作台都能看到最新的人员和用户配置。<br>
+      Token 只保存在当前浏览器，不会上传或泄露。如没有 Token，<a href="https://github.com/settings/tokens/new?scopes=repo&description=workbench" target="_blank" style="color:var(--primary)">点此创建</a>。
+    </div>
+  </div>
   <div class="card">
     <div class="card-title">🔑 联盟带货机构API配置 <span class="sub">在「联盟带货机构管理平台 - 设置 - 开放信息」获取</span></div>
     <div class="config-grid">
@@ -1419,6 +1434,94 @@ async function retryLoadCloudData(){
     toast('云端数据加载成功！', 'success');
   } else {
     toast('云端数据加载失败，请检查网络后重试', 'error');
+  }
+}
+
+// ===================== 云端配置保存（GitHub API 写入） =====================
+const GH_REPO = 'maryy-lab/vhs-workbench';
+const GH_DATA_PATH = 'cloud-sync/data.json';
+const GH_API_BASE = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_DATA_PATH;
+
+async function saveConfigToGitHub(){
+  const tokenEl = document.getElementById('ghTokenInput');
+  const statusEl = document.getElementById('cloudSaveStatus');
+  let token = tokenEl?.value?.trim() || localStorage.getItem('gh_token') || '';
+
+  if(!token){
+    statusEl.textContent = '请先输入 GitHub Token';
+    statusEl.style.color = 'var(--danger)';
+    tokenEl?.focus();
+    return;
+  }
+
+  // 保存 token 到 localStorage
+  localStorage.setItem('gh_token', token);
+  if(tokenEl) tokenEl.value = token;
+
+  statusEl.textContent = '正在保存...';
+  statusEl.style.color = 'var(--primary)';
+
+  try {
+    // 1. 读取当前 data.json（获取 SHA 和现有订单数据）
+    const resp = await fetch(GH_API_BASE, {
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
+    });
+    if(!resp.ok) throw new Error('读取云端数据失败: ' + resp.status);
+    const fileData = await resp.json();
+    const sha = fileData.sha;
+    const existing = JSON.parse(atob(fileData.content));
+
+    // 2. 用本地配置覆盖（保留云端订单，只更新配置部分）
+    existing.users = state.users || {};
+    existing.personnel = state.personnel || { channels: [], zhaoshangs: [] };
+    existing.mapping = state.mapping || {};
+    existing.productMapping = state.productMapping || {};
+    existing.products = state.products || [];
+    existing._meta = existing._meta || {};
+    existing._meta.configUpdated = new Date().toISOString();
+    existing._meta.configUpdatedBy = currentUser || 'unknown';
+
+    // 3. 编码并上传
+    const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(existing, null, 2))));
+    const putResp = await fetch(GH_API_BASE, {
+      method: 'PUT',
+      headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+      body: JSON.stringify({
+        message: 'Update config: users/personnel/mapping (by ' + (currentUser || 'user') + ')',
+        content: newContent,
+        sha: sha
+      })
+    });
+
+    if(!putResp.ok) {
+      const err = await putResp.json();
+      throw new Error(err.message || '上传失败: ' + putResp.status);
+    }
+
+    statusEl.textContent = '✅ 已保存到云端，所有设备将能看到更新';
+    statusEl.style.color = 'var(--success)';
+    toast('配置已保存到云端！', 'success');
+
+    // 同时上传到 jsonblob（兼容旧逻辑）
+    try {
+      await fetch('https://jsonblob.com/api/jsonBlob/' + DEFAULT_ROOM_ID, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mapping: state.mapping || {},
+          users: state.users || {},
+          personnel: state.personnel || { channels: [], zhaoshangs: [] },
+          products: state.products || [],
+          productMapping: state.productMapping || {}
+        })
+      });
+    } catch(e) { /* jsonblob 失败不影响主流程 */ }
+
+  } catch(e) {
+    console.error('saveConfigToGitHub error:', e);
+    statusEl.textContent = '❌ 保存失败: ' + e.message;
+    statusEl.style.color = 'var(--danger)';
+    toast('保存失败: ' + e.message, 'error');
   }
 }
 
@@ -2599,11 +2702,19 @@ function renderAnaInsights(orders, period){
 // ===================== Sync Tab =====================
 async function renderSyncTab(){
   const cloudBanner = document.getElementById('cloudModeBanner');
+  const cloudConfigCard = document.getElementById('cloudConfigCard');
+  const ghTokenInput = document.getElementById('ghTokenInput');
+  // 恢复已保存的 token
+  if(ghTokenInput && !ghTokenInput.value){
+    const saved = localStorage.getItem('gh_token');
+    if(saved) ghTokenInput.value = saved;
+  }
   if(!Server.connected){
     if(githubDataLoaded){
       // 云端数据模式：显示云端数据统计
       if(cloudBanner) cloudBanner.style.display = 'block';
-      document.getElementById('syncStatusText').textContent = '☁️ 云端数据模式（每30分钟自动更新）';
+      if(cloudConfigCard) cloudConfigCard.style.display = 'block';
+      document.getElementById('syncStatusText').textContent = '云端数据模式（每30分钟自动更新）';
       document.getElementById('syncTotalOrders').textContent = state.orders.length || 0;
       document.getElementById('syncTotalTalents').textContent = state.talents.length || 0;
       document.getElementById('syncTotalProducts').textContent = state.products?.length || 0;
@@ -2611,11 +2722,13 @@ async function renderSyncTab(){
       document.getElementById('syncLastTime').textContent = meta.time ? new Date(meta.time).toLocaleString('zh-CN') : '已加载';
     } else {
       if(cloudBanner) cloudBanner.style.display = 'none';
+      if(cloudConfigCard) cloudConfigCard.style.display = 'none';
       document.getElementById('syncStatusText').textContent = '同步服务未启动';
     }
     return;
   }
   if(cloudBanner) cloudBanner.style.display = 'none';
+  if(cloudConfigCard) cloudConfigCard.style.display = 'none';
   try {
     const status = await Server.getStatus();
     document.getElementById('syncTotalOrders').textContent = status.totalOrders || 0;
@@ -2671,7 +2784,8 @@ async function testConnection(){
 async function triggerSync(){
   if(!Server.connected){
     if(githubDataLoaded){
-      toast('云端数据模式：数据每30分钟自动更新，无需手动同步','info');
+      toast('云端模式：如修改了人员/用户，请到「同步设置」点「保存配置到云端」','info');
+      switchTab('sync');
     } else {
       toast('同步服务未启动','error');
     }
@@ -2685,7 +2799,8 @@ async function triggerSync(){
 async function manualSync(){
   if(!Server.connected){
     if(githubDataLoaded){
-      toast('云端数据模式：数据每30分钟自动更新，无需手动同步','info');
+      toast('云端模式：如修改了人员/用户，请到「同步设置」点「保存配置到云端」','info');
+      switchTab('sync');
     } else {
       toast('请先启动同步服务','error');
       switchTab('sync');
