@@ -345,6 +345,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <select class="input" id="filterChannel" onchange="renderOrders()" style="min-width:120px"><option value="">全部渠道</option></select>
     <select class="input" id="filterZS" onchange="renderOrders()" style="min-width:120px"><option value="">全部招商</option></select>
     <select class="input" id="filterPeriod" onchange="renderOrders()" style="min-width:100px"><option value="all">全部时间</option><option value="1">今日</option><option value="7">近7天</option><option value="30">近30天</option></select>
+    <select class="input" id="filterAssign" onchange="renderOrders()" style="min-width:100px"><option value="">分配状态</option><option value="assigned">已分配</option><option value="unassigned">未分配</option></select>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="ordersTable" style="max-height:600px;overflow-y:auto"></div></div>
   <div id="ordersSummary" style="padding:8px 4px;font-size:13px;color:var(--muted)"></div>
@@ -357,6 +358,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <button class="btn btn-success btn-sm edit-only" id="saveMappingBtn" onclick="saveAllMappings()" style="display:none">💾 保存渠道/招商修改</button>
     <div class="spacer"></div>
     <input class="input" id="talentSearch" placeholder="搜索达人名..." oninput="renderTalents()" style="width:200px">
+    <select class="input" id="talentFilterAssign" onchange="renderTalents()" style="min-width:100px"><option value="">分配状态</option><option value="assigned">已分配</option><option value="unassigned">未分配</option></select>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="talentsTable" style="max-height:600px;overflow-y:auto"></div></div>
   <div style="padding:8px 4px;font-size:12px;color:var(--muted)" id="talentHint"></div>
@@ -1778,10 +1780,13 @@ function renderOrders(){
   const search=(document.getElementById('orderSearch').value||'').toLowerCase();
   const fc=document.getElementById('filterChannel').value, fz=document.getElementById('filterZS').value;
   const period=document.getElementById('filterPeriod').value;
+  const fa=document.getElementById('filterAssign').value;
   let orders=getFilteredOrders(period);
   if(search) orders=orders.filter(o=>(o.talentName||'').toLowerCase().includes(search)||(getProduct(o)).toLowerCase().includes(search));
   if(fc) orders=orders.filter(o=>getChannel(o)===fc);
   if(fz) orders=orders.filter(o=>getZhaoshang(o)===fz);
+  if(fa==='assigned') orders=orders.filter(o=>getChannel(o)&&getZhaoshang(o));
+  if(fa==='unassigned') orders=orders.filter(o=>!getChannel(o)||!getZhaoshang(o));
   orders.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   if(!orders.length){ document.getElementById('ordersTable').innerHTML=emptyHTML('暂无出单记录'); document.getElementById('ordersSummary').textContent=''; return; }
   document.getElementById('ordersTable').innerHTML=`<table><thead><tr><th>日期</th><th>达人</th><th>商品</th><th>渠道</th><th>招商</th><th class="text-r">订单数</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody>${orders.map(o=>{
@@ -1884,7 +1889,18 @@ function deleteOrder(id){ if(!confirm('确认删除这条出单记录？')) retu
 // ===================== Talents (Enhanced with inline mapping) =====================
 function renderTalents(){
   const search=(document.getElementById('talentSearch').value||'').toLowerCase();
+  const fa=document.getElementById('talentFilterAssign').value;
   let talents=state.talents.filter(t=>!search||t.name.toLowerCase().includes(search));
+  if(fa==='assigned') talents=talents.filter(t=>{
+    const ch=state.mapping[t.name]?.channel||t.channel||'';
+    const zs=state.mapping[t.name]?.zhaoshang||t.zhaoshang||'';
+    return ch&&zs;
+  });
+  if(fa==='unassigned') talents=talents.filter(t=>{
+    const ch=state.mapping[t.name]?.channel||t.channel||'';
+    const zs=state.mapping[t.name]?.zhaoshang||t.zhaoshang||'';
+    return !ch||!zs;
+  });
   talents.sort((a,b)=>a.name.localeCompare(b.name,'zh'));
   pendingMappings = {};
   document.getElementById('saveMappingBtn').style.display = 'none';
