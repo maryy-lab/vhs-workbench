@@ -317,7 +317,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
   <div class="toolbar">
     <label>统计周期：</label>
     <select class="input" id="dashPeriod" onchange="renderDashboard()" style="min-width:140px">
-      <option value="all">全部</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="90">近90天</option>
+      <option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="90">近90天</option><option value="all">全部</option>
     </select>
   </div>
   <div class="stat-grid" id="statCards"></div>
@@ -330,8 +330,8 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <div class="chart-box"><div class="card-title">💼 招商业绩排行</div><div class="table-wrap" id="zsRankTable"></div></div>
   </div>
   <div class="chart-grid">
-    <div class="chart-box"><div class="card-title">📊 渠道每日排行 <span class="sub">按日期·销售额降序</span></div><div class="table-wrap" id="channelDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
-    <div class="chart-box"><div class="card-title">📊 招商每日排行 <span class="sub">按日期·销售额降序</span></div><div class="table-wrap" id="zsDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
+    <div class="chart-box"><div class="card-title">📊 渠道每日排行 <span class="sub">按日期·销售额降序</span> <select class="input" id="channelRankPeriod" onchange="renderChannelDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="channelDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
+    <div class="chart-box"><div class="card-title">📊 招商每日排行 <span class="sub">按日期·销售额降序</span> <select class="input" id="zsRankPeriod" onchange="renderZSDailyRank()" style="min-width:90px;margin-left:8px"><option value="today">今天</option><option value="yesterday">昨天</option><option value="7" selected>近7天</option><option value="30">近30天</option><option value="month">本月</option><option value="all">全部</option></select></div><div class="table-wrap" id="zsDailyRank" style="max-height:400px;overflow-y:auto"></div></div>
   </div>
   <div class="card"><div class="card-title">🤖 智能洞察</div><div class="insight-list" id="insightList"></div></div>
 </div>
@@ -1302,8 +1302,22 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 function pct(cur, prev){ if(!prev||prev===0) return cur>0?100:0; return ((cur-prev)/prev*100); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function emptyHTML(msg){ return `<div class="empty"><div class="ico">📭</div><div>${msg}</div></div>`; }
-function getFilteredOrders(periodSel){ const days=parseInt(periodSel)||0; if(!days) return [...state.orders]; const cutoff=daysAgo(days); return state.orders.filter(o=>o.date>=cutoff); }
-function getPrevFilteredOrders(periodSel){ const days=parseInt(periodSel)||0; if(!days) return []; const cutoff=daysAgo(days), prevCutoff=daysAgo(days*2); return state.orders.filter(o=>o.date>=prevCutoff&&o.date<cutoff); }
+function getFilteredOrders(periodSel){
+  if(periodSel==='today') return state.orders.filter(o=>o.date===daysAgo(0));
+  if(periodSel==='yesterday') return state.orders.filter(o=>o.date===daysAgo(1));
+  const days=parseInt(periodSel)||0;
+  if(!days) return [...state.orders];
+  const cutoff=daysAgo(days);
+  return state.orders.filter(o=>o.date>=cutoff);
+}
+function getPrevFilteredOrders(periodSel){
+  if(periodSel==='today') return state.orders.filter(o=>o.date===daysAgo(1));
+  if(periodSel==='yesterday') return state.orders.filter(o=>o.date===daysAgo(2));
+  const days=parseInt(periodSel)||0;
+  if(!days) return [];
+  const cutoff=daysAgo(days), prevCutoff=daysAgo(days*2);
+  return state.orders.filter(o=>o.date>=prevCutoff&&o.date<cutoff);
+}
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 // 统一字段获取（兼容API同步和手动录入）
@@ -1695,16 +1709,25 @@ function renderDashboard(){
 }
 
 function renderTrendChart(orders, period){
-  const days = parseInt(period)||0; const actualDays = days || 30;
-  const labels=[], salesData=[], commData=[], serviceData=[];
-  for(let i=actualDays-1;i>=0;i--){
-    const d=daysAgo(i); labels.push(d.slice(5));
+  let labels=[], salesData=[], commData=[], serviceData=[];
+  if(period==='today'||period==='yesterday'){
+    const d = period==='today' ? daysAgo(0) : daysAgo(1);
+    labels.push(d.slice(5));
     const dayOrders=orders.filter(o=>o.date===d);
     salesData.push(dayOrders.reduce((s,o)=>s+getAmount(o),0));
     commData.push(dayOrders.reduce((s,o)=>s+getCommission(o),0));
     serviceData.push(dayOrders.reduce((s,o)=>s+getServiceFee(o),0));
+  } else {
+    const days = parseInt(period)||0; const actualDays = days || 30;
+    for(let i=actualDays-1;i>=0;i--){
+      const d=daysAgo(i); labels.push(d.slice(5));
+      const dayOrders=orders.filter(o=>o.date===d);
+      salesData.push(dayOrders.reduce((s,o)=>s+getAmount(o),0));
+      commData.push(dayOrders.reduce((s,o)=>s+getCommission(o),0));
+      serviceData.push(dayOrders.reduce((s,o)=>s+getServiceFee(o),0));
+    }
   }
-  document.getElementById('trendSub').textContent = period==='all'?'全部时间':`近${actualDays}天`;
+  document.getElementById('trendSub').textContent = period==='all'?'全部时间':period==='today'?'今天':period==='yesterday'?'昨天':`近${parseInt(period)||30}天`;
   drawChart('chartTrend','line',{labels,datasets:[
     {label:'销售额',data:salesData,borderColor:'#4F46E5',backgroundColor:'rgba(79,70,229,.1)',fill:true,tension:.3},
     {label:'服务费',data:serviceData,borderColor:'#10B981',backgroundColor:'rgba(16,185,129,.1)',fill:true,tension:.3},
@@ -2313,7 +2336,12 @@ function renderZSPersonnel(){
 }
 
 function renderChannelDailyRank(){
-  const orders = state.orders;
+  const rankPeriod = document.getElementById('channelRankPeriod')?.value || '7';
+  let orders = state.orders;
+  if(rankPeriod==='today') orders = orders.filter(o=>o.date===daysAgo(0));
+  else if(rankPeriod==='yesterday') orders = orders.filter(o=>o.date===daysAgo(1));
+  else if(rankPeriod==='month'){ const d=new Date(); const monthStart=d.toISOString().slice(0,7)+'-01'; orders=orders.filter(o=>o.date>=monthStart); }
+  else { const days=parseInt(rankPeriod)||0; if(days) orders=orders.filter(o=>o.date>=daysAgo(days)); }
   const container = document.getElementById('channelDailyRank');
   if(!orders.length){ container.innerHTML = emptyHTML('暂无出单数据'); return; }
   const map = {};
@@ -2337,7 +2365,12 @@ function renderChannelDailyRank(){
 }
 
 function renderZSDailyRank(){
-  const orders = state.orders;
+  const rankPeriod = document.getElementById('zsRankPeriod')?.value || '7';
+  let orders = state.orders;
+  if(rankPeriod==='today') orders = orders.filter(o=>o.date===daysAgo(0));
+  else if(rankPeriod==='yesterday') orders = orders.filter(o=>o.date===daysAgo(1));
+  else if(rankPeriod==='month'){ const d=new Date(); const monthStart=d.toISOString().slice(0,7)+'-01'; orders=orders.filter(o=>o.date>=monthStart); }
+  else { const days=parseInt(rankPeriod)||0; if(days) orders=orders.filter(o=>o.date>=daysAgo(days)); }
   const container = document.getElementById('zsDailyRank');
   if(!orders.length){ container.innerHTML = emptyHTML('暂无出单数据'); return; }
   const map = {};
