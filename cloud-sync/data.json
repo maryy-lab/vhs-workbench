@@ -7863,6 +7863,10 @@
     "糖糖": {
       "password": "123456",
       "role": "viewer"
+    },
+    "于东旭": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
@@ -7871,6 +7875,8 @@
     "time": "2026-07-28T23:48:32.071Z",
     "count": 251,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-29T01:52:59.518Z",
+    "configUpdatedBy": "枝枝"
   }
 }
