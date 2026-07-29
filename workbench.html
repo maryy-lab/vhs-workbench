@@ -115,6 +115,8 @@ label{font-size:13px;color:var(--muted);font-weight:500}
 .banner{padding:10px 24px;font-size:13px;display:flex;align-items:center;gap:8px}
 .banner.online{background:#ECFDF5;color:#065F46;border-bottom:1px solid #A7F3D0}
 .banner.offline{background:#FEF3C7;color:#92400E;border-bottom:1px solid #FDE68A}
+.banner.stale{background:#FFF7ED;color:#C2410C;border-bottom:1px solid #FDBA74;animation:pulse-bg 2s infinite}
+@keyframes pulse-bg{0%,100%{background:#FFF7ED}50%{background:#FFEDD5}}
 /* Inline edit */
 .inline-edit{border:1px solid transparent;border-radius:4px;padding:4px 8px;font-size:13px;background:#F9FAFB;cursor:pointer;min-width:80px}
 .inline-edit:hover{border-color:var(--primary-l);background:#fff}
@@ -1407,7 +1409,9 @@ async function loadData() {
       try {
         const ctrl = new AbortController();
         setTimeout(() => ctrl.abort(), 10000);
-        const res = await fetch(dataUrl, { signal: ctrl.signal, cache: 'no-cache' });
+        // 添加时间戳参数绕过 CDN 缓存，确保每次都拿到最新数据
+        const bustUrl = dataUrl + (dataUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+        const res = await fetch(bustUrl, { signal: ctrl.signal, cache: 'no-cache' });
         if (res.ok) {
           const data = await res.json();
           if (data.orders && data.orders.length > 0) {
@@ -1645,12 +1649,30 @@ async function updateConnectionStatus() {
     badge.className = 'api-status online';
     text.textContent = '云端数据';
     syncBtn.style.display = 'none';
-    banner.className = 'banner online';
     const orderCount = state.orders.length;
     const talentCount = state.talents.length;
-    const lastUpdate = state.orders.find(o => o.createdAt)?.createdAt || '';
-    const updateInfo = lastUpdate ? `最近更新: ${new Date(lastUpdate).toLocaleString('zh-CN')}` : '';
-    bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每30分钟自动更新${updateInfo ? ' | ' + updateInfo : ''}`;
+    // 检查数据是否过期（超过2小时视为过期）
+    const metaTime = state._meta?.time;
+    const syncErr = state._meta?.lastSyncError;
+    let isStale = false;
+    let staleMsg = '';
+    if (metaTime) {
+      const ageMin = (Date.now() - new Date(metaTime).getTime()) / 60000;
+      if (ageMin > 120) {
+        isStale = true;
+        staleMsg = `⚠️ 数据已 ${Math.floor(ageMin/60)} 小时未更新（上次更新: ${new Date(metaTime).toLocaleString('zh-CN')}）`;
+        if (syncErr) staleMsg += ` | 同步错误: ${syncErr}`;
+        staleMsg += ' | <a href="javascript:retryLoadCloudData()" style="color:#fff;text-decoration:underline">点此重新加载</a>';
+      }
+    }
+    if (isStale) {
+      banner.className = 'banner stale';
+      bannerText.innerHTML = staleMsg;
+    } else {
+      banner.className = 'banner online';
+      const updateInfo = metaTime ? `最近更新: ${new Date(metaTime).toLocaleString('zh-CN')}` : '';
+      bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每15分钟自动更新${updateInfo ? ' | ' + updateInfo : ''}`;
+    }
   } else if (isCloudMode && cloudBlobId) {
     badge.className = 'api-status online';
     text.textContent = '云端协作';
@@ -3302,7 +3324,26 @@ async function init(){
     // 常规刷新：每5分钟重载一次获取最新数据
     setInterval(() => { window.location.reload(); }, 300000);
   } else if(isCloudMode){
-    // 云端模式：不需要检查本地服务器，但仍定期检查（万一本地服务器启动了）
+    // 云端模式：定期重新加载云端数据（每5分钟），让公司电脑也能自动看到最新数据
+    setInterval(async () => {
+      try {
+        const prevCount = state.orders?.length || 0;
+        const prevMetaTime = state._meta?.time || '';
+        githubDataLoaded = false;
+        await loadData();
+        await updateConnectionStatus();
+        const newCount = state.orders?.length || 0;
+        const newMetaTime = state._meta?.time || '';
+        // 数据有变化时才刷新界面并提示
+        if(newMetaTime && newMetaTime !== prevMetaTime){
+          refreshCurrentTab();
+          if(newCount !== prevCount){
+            toast(`☁️ 云端数据已更新（${newCount} 条订单）`, 'info');
+          }
+        }
+      } catch(e) { console.log('定时云端刷新失败', e); }
+    }, 300000); // 5分钟刷新一次
+    // 同时定期检查本地服务器是否启动
     setInterval(async () => {
       if(!Server.connected){
         const status = await Server.check();
