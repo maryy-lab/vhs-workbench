@@ -8087,6 +8087,12 @@
         "contact": "",
         "note": "",
         "id": "ms51g9ilib02b"
+      },
+      {
+        "name": "枝枝",
+        "contact": "",
+        "note": "",
+        "id": "ms6dyuapf1olv"
       }
     ]
   },
@@ -8142,6 +8148,8 @@
     "time": "2026-07-29T16:08:18.773Z",
     "count": 259,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-29T17:56:16.619Z",
+    "configUpdatedBy": "枝枝"
   }
 }
