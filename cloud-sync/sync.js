@@ -36,6 +36,26 @@ function log(msg) {
   console.log(`[${time}] ${msg}`);
 }
 
+// 带指数退避的自动重试（最多 maxRetries 次）
+async function retryWithBackoff(fn, label, maxRetries = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxRetries) {
+        const delay = attempt * 5000; // 5s, 10s, 15s
+        log(`⚠️ ${label} 第${attempt}次失败: ${err.message}，${delay/1000}秒后重试...`);
+        await sleep(delay);
+      } else {
+        log(`❌ ${label} 已重试${maxRetries}次仍失败: ${err.message}`);
+      }
+    }
+  }
+  throw lastErr;
+}
+
 function parseBigint(data) {
   return JSON.parse(data.replace(/("[^"]+"\s*:\s*)(\d{16,})/g, '$1"$2"'));
 }
@@ -61,15 +81,18 @@ async function getToken() {
     return accessToken;
   }
   log('正在获取 access_token...');
-  const res = await axios.get('https://api.weixin.qq.com/cgi-bin/token', {
-    params: { grant_type: 'client_credential', appid: APPID, secret: SECRET },
-    timeout: 10000
-  });
-  if (res.data.errcode) {
-    throw new Error(`获取token失败: ${res.data.errcode} ${res.data.errmsg}`);
-  }
-  accessToken = res.data.access_token;
-  tokenExpiry = Date.now() + (res.data.expires_in || 7200) * 1000;
+  const result = await retryWithBackoff(async () => {
+    const res = await axios.get('https://api.weixin.qq.com/cgi-bin/token', {
+      params: { grant_type: 'client_credential', appid: APPID, secret: SECRET },
+      timeout: 15000
+    });
+    if (res.data.errcode) {
+      throw new Error(`获取token失败: ${res.data.errcode} ${res.data.errmsg}`);
+    }
+    return res.data;
+  }, '获取access_token');
+  accessToken = result.access_token;
+  tokenExpiry = Date.now() + (result.expires_in || 7200) * 1000;
   log('access_token 获取成功');
   return accessToken;
 }
@@ -84,22 +107,26 @@ async function fetchOrderList(startTime, endTime) {
 
   do {
     page++;
-    res = await axios.post(
-      `https://api.weixin.qq.com/channels/ec/league/headsupplier/order/list/get?access_token=${token}`,
-      {
-        page_size: 30,
-        next_key: nextKey,
-        create_time_range: { start_time: startTime, end_time: endTime }
-      },
-      {
-        timeout: 15000,
-        transformResponse: [function(data) { return parseBigint(data); }]
+    res = await retryWithBackoff(async () => {
+      const r = await axios.post(
+        `https://api.weixin.qq.com/channels/ec/league/headsupplier/order/list/get?access_token=${token}`,
+        {
+          page_size: 30,
+          next_key: nextKey,
+          create_time_range: { start_time: startTime, end_time: endTime }
+        },
+        {
+          timeout: 20000,
+          transformResponse: [function(data) { return parseBigint(data); }]
+        }
+      );
+      if (r.data.errcode) {
+        // token 过期则清除缓存，让下次重试重新获取
+        if (r.data.errcode === 40001 || r.data.errcode === 42001) accessToken = null;
+        throw new Error(`获取订单列表失败: ${r.data.errcode} ${r.data.errmsg}`);
       }
-    );
-
-    if (res.data.errcode) {
-      throw new Error(`获取订单列表失败: ${res.data.errcode} ${res.data.errmsg}`);
-    }
+      return r;
+    }, `获取订单列表第${page}页`);
 
     const list = res.data.list || [];
     if (Array.isArray(list)) {
@@ -122,19 +149,22 @@ async function fetchOrderList(startTime, endTime) {
 // ============ 获取佣金单详情 ============
 async function fetchOrderDetail(orderId, skuId) {
   const token = await getToken();
-  const res = await axios.post(
-    `https://api.weixin.qq.com/channels/ec/league/headsupplier/order/get?access_token=${token}`,
-    { order_id: String(orderId), sku_id: String(skuId) },
-    {
-      timeout: 15000,
-      transformRequest: [function(data) { return buildBigintBody(data); }],
-      transformResponse: [function(data) { return parseBigint(data); }]
+  const res = await retryWithBackoff(async () => {
+    const r = await axios.post(
+      `https://api.weixin.qq.com/channels/ec/league/headsupplier/order/get?access_token=${token}`,
+      { order_id: String(orderId), sku_id: String(skuId) },
+      {
+        timeout: 20000,
+        transformRequest: [function(data) { return buildBigintBody(data); }],
+        transformResponse: [function(data) { return parseBigint(data); }]
+      }
+    );
+    if (r.data.errcode) {
+      if (r.data.errcode === 40001 || r.data.errcode === 42001) accessToken = null;
+      throw new Error(`获取订单详情失败: ${r.data.errcode} ${r.data.errmsg}`);
     }
-  );
-
-  if (res.data.errcode) {
-    throw new Error(`获取订单详情失败: ${res.data.errcode} ${res.data.errmsg}`);
-  }
+    return r;
+  }, `订单详情 ${orderId}`);
 
   return res.data.commssion_order;
 }
@@ -412,6 +442,18 @@ async function main() {
 
   } catch (err) {
     console.error(`\n❌ 同步失败: ${err.message}`);
+    // 即使同步失败，也更新 _meta 标记，让前端知道同步出了问题
+    try {
+      const existingConfig = await readExistingConfig();
+      const existing = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf8'));
+      existing._meta = existing._meta || {};
+      existing._meta.lastSyncError = err.message;
+      existing._meta.lastSyncErrorTime = new Date().toISOString();
+      fs.writeFileSync(OUTPUT_FILE, JSON.stringify(existing, null, 2));
+      log('已保留旧数据并标记同步错误状态');
+    } catch (e2) {
+      log(`无法更新错误标记: ${e2.message}`);
+    }
     process.exit(1);
   }
 }
