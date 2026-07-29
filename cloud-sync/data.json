@@ -7756,7 +7756,12 @@
       "zhaoshang": "大海"
     }
   },
-  "productMapping": {},
+  "productMapping": {
+    "鑫瑞福仓|10000237391702": {
+      "channel": "LLL",
+      "zhaoshang": ""
+    }
+  },
   "personnel": {
     "channels": [
       {
@@ -7876,7 +7881,7 @@
     "count": 251,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-29T01:52:59.518Z",
-    "configUpdatedBy": "枝枝"
+    "configUpdated": "2026-07-29T02:08:45.788Z",
+    "configUpdatedBy": "太阳花"
   }
 }
