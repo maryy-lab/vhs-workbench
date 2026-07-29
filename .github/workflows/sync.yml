@@ -1,14 +1,15 @@
 name: 视频号数据云端同步
 
 on:
-  # 每30分钟自动运行一次
+  # 每15分钟自动运行一次
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/15 * * * *'
   # 手动触发
   workflow_dispatch:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   sync:
@@ -28,6 +29,7 @@ jobs:
           npm install
 
       - name: 执行同步
+        id: sync
         env:
           WX_APPID: ${{ secrets.WX_APPID }}
           WX_SECRET: ${{ secrets.WX_SECRET }}
@@ -36,9 +38,55 @@ jobs:
         run: node cloud-sync/sync.js
 
       - name: 提交数据文件
+        id: commit
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add cloud-sync/data.json
           git commit -m "📊 自动同步数据 $(date -u '+%Y-%m-%d %H:%M')" || echo "无数据变更"
-          git push
+          # 重试 push，避免并发冲突
+          for i in 1 2 3; do
+            git pull --rebase origin main 2>/dev/null || true
+            git push && break || echo "push 重试 $i..."
+            sleep 5
+          done
+
+      # 同步失败时创建 Issue 通知
+      - name: 创建失败通知 Issue
+        if: failure() && steps.sync.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 检查是否已有打开的同步失败 Issue
+          EXISTING=$(gh issue list --label "sync-failure" --state open --json number -q '.[0].number' 2>/dev/null || echo "")
+          if [ -z "$EXISTING" ]; then
+            gh issue create \
+              --title "⚠️ 数据同步失败 - $(date -u '+%Y-%m-%d %H:%M')" \
+              --label "sync-failure" \
+              --body "云端数据同步在 $(date -u '+%Y-%m-%d %H:%M UTC') 执行失败。
+
+          可能原因：
+          - 微信 API 超时或报错
+          - GitHub Secrets (WX_APPID / WX_SECRET) 未配置或已过期
+          - 网络问题
+
+          请检查 [Actions 运行记录](../actions) 排查具体错误。
+
+          此 Issue 会在下次同步成功后自动关闭。"
+            echo "已创建失败通知 Issue"
+          else
+            echo "已存在打开的同步失败 Issue #$EXISTING，不重复创建"
+          fi
+
+      # 同步成功时关闭失败通知 Issue
+      - name: 关闭失败通知 Issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUES=$(gh issue list --label "sync-failure" --state open --json number -q '.[].number' 2>/dev/null || echo "")
+          for num in $ISSUES; do
+            gh issue close "$num" --comment "✅ 同步已恢复正常 $(date -u '+%Y-%m-%d %H:%M UTC')" 2>/dev/null || true
+            echo "已关闭 Issue #$num"
+          done
