@@ -6,7 +6,7 @@ on:
     - cron: '*/10 * * * *'
   # 手动触发
   workflow_dispatch:
-  # 外部服务触发（Cloudflare Worker 每 15 分钟调用）
+  # 外部触发 + 自循环触发（工作流结束后自动触发下一次）
   repository_dispatch:
     types: [sync]
 
@@ -93,3 +93,28 @@ jobs:
             gh issue close "$num" --comment "✅ 同步已恢复正常 $(date -u '+%Y-%m-%d %H:%M UTC')" 2>/dev/null || true
             echo "已关闭 Issue #$num"
           done
+
+      # 自循环：触发下一次同步（彻底不依赖 GitHub cron）
+      - name: 触发下一次同步
+        if: always()
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          if [ -z "$PAT_TOKEN" ]; then
+            echo "PAT_TOKEN 未设置，跳过自触发"
+            exit 0
+          fi
+          echo "等待 10 分钟后触发下一次同步..."
+          sleep 600
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: token $PAT_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "User-Agent: sync-self-trigger" \
+            -H "Content-Type: application/json" \
+            -d '{"event_type":"sync"}' \
+            https://api.github.com/repos/maryy-lab/vhs-workbench/dispatches)
+          if [ "$RESPONSE" = "204" ]; then
+            echo "✅ 下一次同步已触发（自循环链路保持中）"
+          else
+            echo "⚠️ 触发失败 (HTTP $RESPONSE)，等待 cron 重启链路"
+          fi
