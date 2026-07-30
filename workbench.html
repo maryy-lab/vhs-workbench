@@ -1663,6 +1663,7 @@ async function updateConnectionStatus() {
         staleMsg = `⚠️ 数据已 ${Math.floor(ageMin/60)} 小时未更新（上次更新: ${new Date(metaTime).toLocaleString('zh-CN')}）`;
         if (syncErr) staleMsg += ` | 同步错误: ${syncErr}`;
         staleMsg += ' | <a href="javascript:retryLoadCloudData()" style="color:#fff;text-decoration:underline">点此重新加载</a>';
+        staleMsg += ' | <a href="https://github.com/maryy-lab/vhs-workbench/actions/workflows/sync.yml" target="_blank" style="color:#fff;text-decoration:underline;font-weight:bold">🔧 点此手动触发同步</a>';
       }
     }
     if (isStale) {
@@ -1671,7 +1672,7 @@ async function updateConnectionStatus() {
     } else {
       banner.className = 'banner online';
       const updateInfo = metaTime ? `最近更新: ${new Date(metaTime).toLocaleString('zh-CN')}` : '';
-      bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每15分钟自动更新${updateInfo ? ' | ' + updateInfo : ''}`;
+      bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每10分钟自动更新${updateInfo ? ' | ' + updateInfo : ''} | <a href="https://github.com/maryy-lab/vhs-workbench/actions/workflows/sync.yml" target="_blank" style="color:#fff;text-decoration:underline">手动同步</a>`;
     }
   } else if (isCloudMode && cloudBlobId) {
     badge.className = 'api-status online';
