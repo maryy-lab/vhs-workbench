@@ -1,11 +1,14 @@
 name: 视频号数据云端同步
 
 on:
-  # 每15分钟自动运行一次
+  # 每15分钟自动运行一次（GitHub cron 可能延迟，作为备用）
   schedule:
     - cron: '*/15 * * * *'
   # 手动触发
   workflow_dispatch:
+  # 外部服务触发（Cloudflare Worker 每 15 分钟调用）
+  repository_dispatch:
+    types: [sync]
 
 permissions:
   contents: write
