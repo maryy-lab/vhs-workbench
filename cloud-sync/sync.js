@@ -169,6 +169,20 @@ async function fetchOrderDetail(orderId, skuId) {
   return res.data.commssion_order;
 }
 
+// ============ 北京时间格式化 ============
+// 中国标准时间 UTC+8，无夏令时，固定偏移 28800 秒
+// （ISO 字符串偏移后取切片，等价于按北京时间格式化）
+function toBeijingDateStr(unixSec) {
+  if (!unixSec) unixSec = Math.floor(Date.now() / 1000);
+  return new Date((unixSec + 8 * 3600) * 1000).toISOString().slice(0, 10);
+}
+// 返回 "YYYY-MM-DD HH:mm" 北京时间，精确到分钟（与联盟带货机构后台出单时间一致）
+function toBeijingTimeStr(unixSec) {
+  if (!unixSec) unixSec = Math.floor(Date.now() / 1000);
+  const iso = new Date((unixSec + 8 * 3600) * 1000).toISOString();
+  return iso.slice(0, 10) + ' ' + iso.slice(11, 16);
+}
+
 // ============ 数据转换 ============
 function transformOrder(raw) {
   const detail = raw.order_detail || {};
@@ -202,8 +216,11 @@ function transformOrder(raw) {
     talentCommissionRatio = (s.ratio || 0) / 10000;
   }
 
-  const timestamp = orderInfo.pay_time || orderInfo.create_time || raw.create_time || Date.now() / 1000;
-  const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
+  // 出单时间：优先取付款时间(pay_time)，其次订单创建时间(create_time)，最后兜底当前时间
+  // 全部按北京时间(UTC+8)计算，与联盟带货机构后台一致
+  const timestamp = orderInfo.pay_time || orderInfo.create_time || raw.create_time || Math.floor(Date.now() / 1000);
+  const date = toBeijingDateStr(timestamp);
+  const payTimeStr = toBeijingTimeStr(timestamp);
 
   const orderStatusMap = { 10: '待付款', 12: '待收礼', 17: '待使用', 20: '待发货', 21: '部分发货', 30: '待收货', 100: '已完成', 200: '已取消', 250: '已取消' };
   const commissionStatusMap = { 20: '未结算', 100: '已结算', 200: '取消结算' };
@@ -213,6 +230,7 @@ function transformOrder(raw) {
     orderId: String(raw.order_id),
     skuId: raw.sku_id,
     date,
+    payTimeStr,
     talentName,
     talentType,
     talentId,
