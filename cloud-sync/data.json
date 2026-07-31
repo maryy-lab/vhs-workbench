@@ -4466,8 +4466,16 @@
       "zhaoshang": "小宇宙"
     },
     "楠楠好物优选1店|10000237391702": {
-      "channel": "猪猪",
-      "zhaoshang": ""
+      "channel": "",
+      "zhaoshang": "枝枝"
+    },
+    "月月的9852橱窗|10000689052926": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "居家烟火小铺子521|10000381332389": {
+      "channel": "LLL",
+      "zhaoshang": "大海"
     }
   },
   "personnel": {
@@ -4595,7 +4603,7 @@
     "count": 134,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-31T07:13:38.103Z",
+    "configUpdated": "2026-07-31T07:14:54.584Z",
     "configUpdatedBy": "枝枝"
   }
 }
