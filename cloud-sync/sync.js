@@ -192,21 +192,23 @@ function transformOrder(raw) {
   const orderInfo = detail.order_info || {};
 
 
+  // 达人信息提取：优先 finder_info（视频号名称，与联盟机构后台显示一致）
+  // talent_info.nickname 有时是系统生成的字母串(如 z1234nn)，并非用户在后台看到的视频号名称
   let talentName = '', talentType = '', talentId = '', talentCommission = 0, talentCommissionRatio = 0;
-  if (commission.talent_info && commission.talent_info.nickname) {
-    const t = commission.talent_info;
-    talentName = t.nickname;
-    talentType = 'talent';
-    talentId = t.opentalentid || t.talent_appid || '';
-    talentCommission = (t.amount || 0) / 100;
-    talentCommissionRatio = (t.ratio || 0) / 10000;
-  } else if (commission.finder_info && commission.finder_info.nickname) {
+  if (commission.finder_info && commission.finder_info.nickname) {
     const f = commission.finder_info;
     talentName = f.nickname;
     talentType = 'finder';
     talentId = f.openfinderid || '';
     talentCommission = (f.amount || 0) / 100;
     talentCommissionRatio = (f.ratio || 0) / 10000;
+  } else if (commission.talent_info && commission.talent_info.nickname) {
+    const t = commission.talent_info;
+    talentName = t.nickname;
+    talentType = 'talent';
+    talentId = t.opentalentid || t.talent_appid || '';
+    talentCommission = (t.amount || 0) / 100;
+    talentCommissionRatio = (t.ratio || 0) / 10000;
   } else if (commission.sharer_info && commission.sharer_info.nickname) {
     const s = commission.sharer_info;
     talentName = s.nickname;
@@ -381,7 +383,8 @@ async function main() {
 
     // 2. 获取订单列表
     const endTime = Math.floor(Date.now() / 1000);
-    const startTime = endTime - SYNC_DAYS * 24 * 3600;
+    // 多往前取2天作为缓冲，确保不漏单（API按create_time过滤，与后台按付款时间可能略有差异）
+    const startTime = endTime - (SYNC_DAYS + 2) * 24 * 3600;
     log(`开始同步最近 ${SYNC_DAYS} 天的佣金订单...`);
 
     const orderList = await fetchOrderList(startTime, endTime);
