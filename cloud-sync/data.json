@@ -10626,12 +10626,63 @@
     "山村阿刚": {
       "channel": "魏佳旭",
       "zhaoshang": "大海"
+    },
+    "楠楠好物优选1店": {
+      "channel": "猪猪",
+      "zhaoshang": "小宇宙"
+    },
+    "居家烟火小铺子521": {
+      "channel": "LLL",
+      "zhaoshang": "大海"
+    },
+    "可馨优品": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "鑫瑞福仓": {
+      "channel": "LLL",
+      "zhaoshang": "枝枝"
+    },
+    "沐槿家优选": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "心想事成Zndr": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
     }
   },
   "productMapping": {
     "鑫瑞福仓|10000237391702": {
       "channel": "LLL",
       "zhaoshang": ""
+    },
+    "楠楠好物优选1店|10000689052926": {
+      "zhaoshang": "小宇宙"
+    },
+    "楠楠好物优选1店|10000237391702": {
+      "channel": "",
+      "zhaoshang": "枝枝"
+    },
+    "月月的9852橱窗|10000689052926": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "居家烟火小铺子521|10000381332389": {
+      "channel": "LLL",
+      "zhaoshang": "大海"
+    },
+    "听旧雨.2|10000083279642": {
+      "channel": "听旧雨",
+      "zhaoshang": "枝枝"
+    },
+    "🧚🏻‍♀️冯冯居家小铺|10000491560508": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
+    },
+    "🧚🏻‍♀️冯冯居家小铺|10000150773977": {
+      "channel": "魏佳旭",
+      "zhaoshang": "大海"
     }
   },
   "personnel": {
@@ -10719,10 +10770,6 @@
       "password": "123456",
       "role": "viewer"
     },
-    "zz": {
-      "password": "123456",
-      "role": "viewer"
-    },
     "LLL": {
       "password": "123456",
       "role": "viewer"
@@ -10758,6 +10805,8 @@
     "time": "2026-07-31T17:44:58.575Z",
     "count": 332,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-31T17:48:24.041Z",
+    "configUpdatedBy": "枝枝"
   }
 }
