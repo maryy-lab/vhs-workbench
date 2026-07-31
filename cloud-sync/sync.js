@@ -480,6 +480,19 @@ async function main() {
     log(`数据转换完成！成功 ${fetched} 条，失败 ${errors} 条`);
 
     // 5. 保存到 data.json 文件（GitHub Actions 会自动提交到仓库）
+    // 安全检查：如果配置为空但已有配置非空，保留已有配置（防止意外清空）
+    if((!userConfig.personnel?.channels?.length && !userConfig.personnel?.zhaoshangs?.length) && existingConfig.personnel && (existingConfig.personnel.channels?.length || existingConfig.personnel.zhaoshangs?.length)){
+      log('⚠️ 警告：当前 personnel 为空但已有配置非空，保留已有配置');
+      userConfig.personnel = existingConfig.personnel;
+    }
+    if(Object.keys(userConfig.users).length === 0 && Object.keys(existingConfig.users||{}).length > 0){
+      log('⚠️ 警告：当前 users 为空但已有配置非空，保留已有配置');
+      userConfig.users = existingConfig.users;
+    }
+    if(Object.keys(userConfig.mapping).length === 0 && Object.keys(existingConfig.mapping||{}).length > 0){
+      log('⚠️ 警告：当前 mapping 为空但已有配置非空，保留已有配置');
+      userConfig.mapping = existingConfig.mapping;
+    }
     const output = {
       orders: mappedOrders,
       talents,
