@@ -1325,6 +1325,44 @@ function getPrevFilteredOrders(periodSel){
 }
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
+// 达人显示渠道/招商：综合 talent 级和 product 级映射
+// 如果按商品分配了，自动在达人表显示：同一组 → 显示名称，不同组 → 显示"已分配"
+function getTalentDisplayInfo(talentName){
+  const orders = state.orders.filter(o => o.talentName === talentName);
+  const productIds = [...new Set(orders.map(o => o.productId).filter(Boolean))];
+  const productChannels = new Set();
+  const productZhaoshangs = new Set();
+  let hasProductMapping = false;
+
+  productIds.forEach(pid => {
+    const pkey = talentName + '|' + pid;
+    const pm = state.productMapping?.[pkey];
+    if(pm){
+      hasProductMapping = true;
+      if(pm.channel) productChannels.add(pm.channel);
+      if(pm.zhaoshang) productZhaoshangs.add(pm.zhaoshang);
+    }
+  });
+
+  let displayChannel = '', channelFromProduct = false;
+  if(hasProductMapping && productChannels.size > 0){
+    displayChannel = productChannels.size === 1 ? [...productChannels][0] : '已分配';
+    channelFromProduct = true;
+  } else {
+    displayChannel = state.mapping[talentName]?.channel || state.talents.find(t=>t.name===talentName)?.channel || '';
+  }
+
+  let displayZS = '', zsFromProduct = false;
+  if(hasProductMapping && productZhaoshangs.size > 0){
+    displayZS = productZhaoshangs.size === 1 ? [...productZhaoshangs][0] : '已分配';
+    zsFromProduct = true;
+  } else {
+    displayZS = state.mapping[talentName]?.zhaoshang || state.talents.find(t=>t.name===talentName)?.zhaoshang || '';
+  }
+
+  return { displayChannel, displayZS, channelFromProduct, zsFromProduct, hasProductMapping };
+}
+
 // 统一字段获取（兼容API同步和手动录入）
 function getAmount(o){ return Number(o.amount)||Number(o.salesAmount)||0; }
 function getServiceFee(o){ return Number(o.serviceFee)||Number(o.serviceAmount)||0; }
@@ -2012,14 +2050,12 @@ function renderTalents(){
   const fa=document.getElementById('talentFilterAssign').value;
   let talents=state.talents.filter(t=>!search||t.name.toLowerCase().includes(search));
   if(fa==='assigned') talents=talents.filter(t=>{
-    const ch=state.mapping[t.name]?.channel||t.channel||'';
-    const zs=state.mapping[t.name]?.zhaoshang||t.zhaoshang||'';
-    return ch&&zs;
+    const info=getTalentDisplayInfo(t.name);
+    return info.displayChannel&&info.displayZS;
   });
   if(fa==='unassigned') talents=talents.filter(t=>{
-    const ch=state.mapping[t.name]?.channel||t.channel||'';
-    const zs=state.mapping[t.name]?.zhaoshang||t.zhaoshang||'';
-    return !ch||!zs;
+    const info=getTalentDisplayInfo(t.name);
+    return !info.displayChannel||!info.displayZS;
   });
   talents.sort((a,b)=>a.name.localeCompare(b.name,'zh'));
   pendingMappings = {};
@@ -2038,23 +2074,39 @@ function renderTalents(){
     return `<select class="inline-edit" onchange="${onchange}" style="width:130px" ${editable?'':'disabled'}>${opts}</select>`;
   }
 
+  // 渲染渠道/招商单元格：有商品级映射 → 显示计算结果(名称或"已分配")，否则用下拉框
+  function renderMappingCell(type, info, options, talentName){
+    const fromProduct = type === 'channel' ? info.channelFromProduct : info.zsFromProduct;
+    const val = type === 'channel' ? info.displayChannel : info.displayZS;
+    const tagClass = type === 'channel' ? 'tag-blue' : 'tag-purple';
+    const escName = esc(talentName);
+
+    if(fromProduct){
+      // 有商品级分配，显示标签（可点击进入商品分配弹窗）
+      const isMixed = val === '已分配';
+      const style = isMixed ? 'tag-orange' : tagClass;
+      const display = isMixed ? '📦 已分配' : '📦 ' + esc(val);
+      return `<span class="tag ${style}" style="cursor:pointer" onclick="openProductAssign('${escName}')" title="点击查看/修改商品分配">${display}</span>`;
+    }
+    if(editable){
+      const onchange = `markMappingChanged('${escName}','${type}',this.value)`;
+      return makeSelect(options, val, type==='channel'?'选择渠道':'选择招商', onchange);
+    }
+    return `<span class="tag ${tagClass}">${esc(val)||'-'}</span>`;
+  }
+
   document.getElementById('talentsTable').innerHTML=`<table><thead><tr>
     <th>达人名称</th><th>渠道${editable?'（可编辑）':''}</th><th>招商${editable?'（可编辑）':''}</th><th>类型</th><th>出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>操作</th>
   </tr></thead><tbody>${talents.map(t=>{
     const s=stats[t.name]||{count:0,amount:0,service:0,comm:0};
-    const curChannel = state.mapping[t.name]?.channel || t.channel || '';
-    const curZS = state.mapping[t.name]?.zhaoshang || t.zhaoshang || '';
+    const info = getTalentDisplayInfo(t.name);
     const typeTag = t.talentType==='finder'?'<span class="tag tag-blue">视频号</span>':t.talentType==='talent'?'<span class="tag tag-green">带货者</span>':t.talentType==='sharer'?'<span class="tag tag-orange">推客</span>':'<span class="tag tag-gray">手动</span>';
-    const channelSel = editable 
-      ? makeSelect(channels, curChannel, '选择渠道', `markMappingChanged('${esc(t.name)}','channel',this.value)`)
-      : `<span class="tag tag-blue">${esc(curChannel)||'-'}</span>`;
-    const zsSel = editable
-      ? makeSelect(zsList, curZS, '选择招商', `markMappingChanged('${esc(t.name)}','zhaoshang',this.value)`)
-      : `<span class="tag tag-purple">${esc(curZS)||'-'}</span>`;
+    const channelCell = renderMappingCell('channel', info, channels, t.name);
+    const zsCell = renderMappingCell('zhaoshang', info, zsList, t.name);
     return `<tr>
       <td><b>${esc(t.name)}</b></td>
-      <td>${channelSel}</td>
-      <td>${zsSel}</td>
+      <td>${channelCell}</td>
+      <td>${zsCell}</td>
       <td>${typeTag}</td>
       <td>${s.count}单</td>
       <td class="text-r"><b>${fmtMoney(s.amount)}</b></td>
@@ -2064,7 +2116,7 @@ function renderTalents(){
     </tr>`;
   }).join('')}</tbody></table>`;
   document.getElementById('talentHint').textContent = editable 
-    ? (Server.connected ? '💡 直接在表格中修改渠道和招商，修改后点击「保存渠道/招商修改」按钮保存到服务器' : '💡 修改渠道和招商后点击「保存渠道/招商修改」按钮保存')
+    ? (Server.connected ? '💡 直接在表格中修改渠道和招商（达人级），或点击「商品分配」按商品单独指定。商品分配后会自动显示在渠道/招商列' : '💡 修改渠道和招商后点击「保存渠道/招商修改」按钮保存')
     : '💡 当前为只读模式，仅管理人员可修改渠道和招商分配';
 }
 
@@ -2184,6 +2236,7 @@ function saveProductAssign(){
   });
   saveLocalState();
   debouncedCloudUpload();
+  autoSaveCloudConfig();
   toast(`已保存 ${entries.length} 条商品级分配`,'success');
   pendingProductMappings = {};
   document.getElementById('productAssignModal').classList.remove('show');
@@ -2877,6 +2930,7 @@ async function saveProductMappings(){
   toast('商品渠道/招商分配已保存','success');
   closeProductModal();
   renderProducts();
+  renderTalents();
   autoSaveCloudConfig();
 }
 
