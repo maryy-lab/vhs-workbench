@@ -258,6 +258,42 @@ function transformOrder(raw) {
   };
 }
 
+// ============ 列表数据兜底（详情获取失败时用，确保订单不丢失） ============
+function transformListOrder(item) {
+  const commissionStatusMap = { 20: '未结算', 100: '已结算', 200: '取消结算' };
+  const timestamp = item.create_time || Math.floor(Date.now() / 1000);
+  return {
+    id: `${item.order_id}_${item.sku_id}`,
+    orderId: String(item.order_id),
+    skuId: item.sku_id,
+    date: toBeijingDateStr(timestamp),
+    payTimeStr: toBeijingTimeStr(timestamp),
+    talentName: '',
+    talentType: '',
+    talentId: '',
+    shopName: '',
+    shopAppid: '',
+    productTitle: '',
+    productId: '',
+    productImg: '',
+    productCount: 1,
+    salesAmount: 0,
+    serviceAmount: 0,
+    serviceRatio: 0,
+    serviceTotalAmount: 0,
+    talentCommission: 0,
+    talentCommissionRatio: 0,
+    platformAmount: 0,
+    promotionChannel: '',
+    orderStatus: '未知(详情获取失败)',
+    commissionStatus: commissionStatusMap[item.status] || String(item.status || ''),
+    createTime: item.create_time,
+    payTime: null,
+    syncedAt: new Date().toISOString(),
+    _detailFailed: true
+  };
+}
+
 // ============ 提取达人列表 ============
 function extractTalents(orders, mapping) {
   const map = {};
@@ -383,9 +419,9 @@ async function main() {
 
     // 2. 获取订单列表
     const endTime = Math.floor(Date.now() / 1000);
-    // 多往前取2天作为缓冲，确保不漏单（API按create_time过滤，与后台按付款时间可能略有差异）
-    const startTime = endTime - (SYNC_DAYS + 2) * 24 * 3600;
-    log(`开始同步最近 ${SYNC_DAYS} 天的佣金订单...`);
+    // 多往前取3天作为缓冲，确保不漏单（API按create_time过滤，与后台按付款时间可能略有差异）
+    const startTime = endTime - (SYNC_DAYS + 3) * 24 * 3600;
+    log(`开始同步最近 ${SYNC_DAYS} 天的佣金订单（缓冲3天）...`);
 
     const orderList = await fetchOrderList(startTime, endTime);
     log(`共获取到 ${orderList.length} 条佣金单`);
@@ -394,8 +430,9 @@ async function main() {
       log('无订单数据');
     }
 
-    // 3. 获取每条订单详情
+    // 3. 获取每条订单详情（失败的先收集，最后重试+兜底）
     const detailedOrders = [];
+    const failedItems = []; // 详情获取失败的订单，最后再重试一轮
     let fetched = 0, errors = 0;
 
     for (const item of orderList) {
@@ -406,12 +443,33 @@ async function main() {
         detailedOrders.push(transformed);
         fetched++;
 
-        if (fetched % 10 === 0) {
+        if (fetched % 20 === 0) {
           log(`已获取 ${fetched}/${orderList.length} 条订单详情...`);
         }
       } catch (err) {
-        errors++;
-        log(`订单 ${item.order_id} 详情获取失败: ${err.message}`);
+        failedItems.push(item);
+        log(`订单 ${item.order_id} 详情获取失败(将重试): ${err.message}`);
+      }
+    }
+
+    // 3.5 对失败的订单做第二轮重试（间隔更长，避免限流）
+    if (failedItems.length > 0) {
+      log(`第一轮完成: 成功 ${fetched} 条，失败 ${failedItems.length} 条，开始重试...`);
+      for (const item of failedItems) {
+        try {
+          await sleep(1000); // 重试间隔更长
+          const detail = await fetchOrderDetail(item.order_id, item.sku_id);
+          const transformed = transformOrder(detail);
+          detailedOrders.push(transformed);
+          fetched++;
+          log(`重试成功: 订单 ${item.order_id}`);
+        } catch (err) {
+          errors++;
+          // 兜底：用列表数据创建最小记录，确保订单不丢失
+          const fallback = transformListOrder(item);
+          detailedOrders.push(fallback);
+          log(`重试仍失败，已用列表数据兜底: 订单 ${item.order_id} (${err.message})`);
+        }
       }
     }
 
@@ -455,9 +513,11 @@ async function main() {
     console.log('');
     console.log('═══════════════════════════════════════════');
     console.log('  ✅ 云端同步完成！');
-    console.log(`  订单数: ${mappedOrders.length}`);
+    console.log(`  订单列表: ${orderList.length} 条`);
+    console.log(`  详情成功: ${fetched} 条`);
+    console.log(`  详情失败(已兜底): ${errors} 条`);
+    console.log(`  最终入库: ${mappedOrders.length} 条`);
     console.log(`  达人数: ${talents.length}`);
-    console.log(`  失败数: ${errors}`);
     console.log(`  数据文件: cloud-sync/data.json`);
     console.log('═══════════════════════════════════════════');
 
