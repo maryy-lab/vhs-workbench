@@ -10683,6 +10683,10 @@
     "🧚🏻‍♀️冯冯居家小铺|10000150773977": {
       "channel": "魏佳旭",
       "zhaoshang": "大海"
+    },
+    "老字号坚嘢|10000705247600": {
+      "channel": "太阳花",
+      "zhaoshang": "大海"
     }
   },
   "personnel": {
@@ -10797,6 +10801,10 @@
     "于东旭": {
       "password": "123456",
       "role": "viewer"
+    },
+    "猪猪": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
@@ -10806,7 +10814,7 @@
     "count": 332,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-31T17:48:24.041Z",
+    "configUpdated": "2026-07-31T17:52:21.941Z",
     "configUpdatedBy": "枝枝"
   }
 }
