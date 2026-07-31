@@ -18,7 +18,7 @@ const path = require('path');
 // ============ 配置（从环境变量读取） ============
 const APPID = process.env.WX_APPID;
 const SECRET = process.env.WX_SECRET;
-const JSONBLOB_ID = process.env.JSONBLOB_ID || '019fa181-1038-700a-9d23-38f99c75d982';
+const JSONBLOB_ID = process.env.JSONBLOB_ID || '019fb939-7892-704d-956b-3aa79a5df273';
 const SYNC_DAYS = parseInt(process.env.SYNC_DAYS || '7', 10);
 const CLOUD_API = 'https://jsonblob.com/api/jsonBlob';
 const OUTPUT_FILE = path.join(__dirname, 'data.json');
