@@ -4492,6 +4492,14 @@
     "鑫瑞福仓|10000237391702": {
       "channel": "LLL",
       "zhaoshang": ""
+    },
+    "楠楠好物优选1店|10000689052926": {
+      "zhaoshang": "大海",
+      "channel": "zz"
+    },
+    "楠楠好物优选1店|10000237391702": {
+      "channel": "zz",
+      "zhaoshang": "大海"
     }
   },
   "personnel": {
@@ -4618,6 +4626,8 @@
     "time": "2026-07-31T06:59:30.749Z",
     "count": 135,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-31T07:01:34.081Z",
+    "configUpdatedBy": "枝枝"
   }
 }
