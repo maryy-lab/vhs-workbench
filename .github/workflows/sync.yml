@@ -104,8 +104,8 @@ jobs:
             echo "PAT_TOKEN 未设置，跳过自触发"
             exit 0
           fi
-          echo "等待 10 分钟后触发下一次同步..."
-          sleep 600
+          echo "等待 5 分钟后触发下一次同步..."
+          sleep 300
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Authorization: token $PAT_TOKEN" \
             -H "Accept: application/vnd.github+json" \
