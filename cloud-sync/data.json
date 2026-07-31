@@ -10303,12 +10303,6 @@
         "id": "ms507usio02fc"
       },
       {
-        "name": "魏佳旭",
-        "contact": "",
-        "note": "",
-        "id": "ms5083fcc5k1p"
-      },
-      {
         "name": "糖糖",
         "contact": "",
         "note": "",
@@ -10377,10 +10371,6 @@
       "password": "123456",
       "role": "viewer"
     },
-    "魏佳旭": {
-      "password": "123456",
-      "role": "viewer"
-    },
     "糖糖": {
       "password": "123456",
       "role": "viewer"
@@ -10400,6 +10390,8 @@
     "time": "2026-07-31T16:55:20.666Z",
     "count": 319,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-31T16:56:07.833Z",
+    "configUpdatedBy": "枝枝"
   }
 }
