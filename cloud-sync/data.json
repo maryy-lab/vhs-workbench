@@ -5076,7 +5076,7 @@
   ],
   "mapping": {
     "贾铁锤的工厂直选": {
-      "channel": "猪猪",
+      "channel": "zz",
       "zhaoshang": "大海"
     },
     "乐子每一天": {
@@ -5106,6 +5106,10 @@
     "沐槿家优选": {
       "channel": "LLL",
       "zhaoshang": "小宇宙"
+    },
+    "心想事成Zndr": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
     }
   },
   "productMapping": {
@@ -5131,6 +5135,14 @@
     "听旧雨.2|10000083279642": {
       "channel": "听旧雨",
       "zhaoshang": "枝枝"
+    },
+    "🧚🏻‍♀️冯冯居家小铺|10000491560508": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
+    },
+    "🧚🏻‍♀️冯冯居家小铺|10000150773977": {
+      "channel": "魏佳旭",
+      "zhaoshang": "大海"
     }
   },
   "personnel": {
@@ -5140,12 +5152,6 @@
         "contact": "",
         "note": "",
         "id": "ms507a5ex88n6"
-      },
-      {
-        "name": "1",
-        "contact": "",
-        "note": "",
-        "id": "ms507kgdt8vsg"
       },
       {
         "name": "LLL",
@@ -5257,6 +5263,8 @@
     "time": "2026-07-31T15:48:47.797Z",
     "count": 154,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-31T15:50:20.347Z",
+    "configUpdatedBy": "枝枝"
   }
 }
