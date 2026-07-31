@@ -4553,7 +4553,7 @@
         "id": "ms507a5ex88n6"
       },
       {
-        "name": "猪猪",
+        "name": "1",
         "contact": "",
         "note": "",
         "id": "ms507kgdt8vsg"
@@ -4629,10 +4629,6 @@
       "password": "123456",
       "role": "viewer"
     },
-    "zz": {
-      "password": "123456",
-      "role": "viewer"
-    },
     "LLL": {
       "password": "123456",
       "role": "viewer"
@@ -4673,7 +4669,7 @@
     "count": 135,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-07-31T09:39:51.817Z",
+    "configUpdated": "2026-07-31T09:40:55.303Z",
     "configUpdatedBy": "枝枝"
   }
 }
