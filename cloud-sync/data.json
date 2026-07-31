@@ -4463,8 +4463,7 @@
       "zhaoshang": ""
     },
     "楠楠好物优选1店|10000689052926": {
-      "zhaoshang": "大海",
-      "channel": "zz"
+      "zhaoshang": "小宇宙"
     },
     "楠楠好物优选1店|10000237391702": {
       "channel": "zz",
@@ -4480,7 +4479,7 @@
         "id": "ms507a5ex88n6"
       },
       {
-        "name": "zz",
+        "name": "猪猪",
         "contact": "",
         "note": "",
         "id": "ms507kgdt8vsg"
@@ -4595,6 +4594,8 @@
     "time": "2026-07-31T07:11:17.484Z",
     "count": 134,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-07-31T07:11:58.202Z",
+    "configUpdatedBy": "枝枝"
   }
 }
