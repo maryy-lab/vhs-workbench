@@ -10845,10 +10845,6 @@
       "password": "123456",
       "role": "viewer"
     },
-    "zz": {
-      "password": "123456",
-      "role": "viewer"
-    },
     "LLL": {
       "password": "123456",
       "role": "viewer"
@@ -10889,7 +10885,7 @@
     "count": 335,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-01T01:40:57.474Z",
+    "configUpdated": "2026-08-01T01:41:59.067Z",
     "configUpdatedBy": "枝枝"
   }
 }
