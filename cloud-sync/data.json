@@ -10709,7 +10709,7 @@
   ],
   "mapping": {
     "贾铁锤的工厂直选": {
-      "channel": "zz",
+      "channel": "猪猪",
       "zhaoshang": "大海"
     },
     "乐子每一天": {
@@ -10719,12 +10719,51 @@
     "山村阿刚": {
       "channel": "魏佳旭",
       "zhaoshang": "大海"
+    },
+    "楠楠好物优选1店": {
+      "channel": "猪猪",
+      "zhaoshang": "小宇宙"
+    },
+    "居家烟火小铺子521": {
+      "channel": "LLL",
+      "zhaoshang": "大海"
+    },
+    "可馨优品": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "鑫瑞福仓": {
+      "channel": "LLL",
+      "zhaoshang": "枝枝"
+    },
+    "沐槿家优选": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
     }
   },
   "productMapping": {
     "鑫瑞福仓|10000237391702": {
       "channel": "LLL",
       "zhaoshang": ""
+    },
+    "楠楠好物优选1店|10000689052926": {
+      "zhaoshang": "小宇宙"
+    },
+    "楠楠好物优选1店|10000237391702": {
+      "channel": "",
+      "zhaoshang": "枝枝"
+    },
+    "月月的9852橱窗|10000689052926": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "居家烟火小铺子521|10000381332389": {
+      "channel": "LLL",
+      "zhaoshang": "大海"
+    },
+    "听旧雨.2|10000083279642": {
+      "channel": "听旧雨",
+      "zhaoshang": "枝枝"
     }
   },
   "personnel": {
@@ -10734,12 +10773,6 @@
         "contact": "",
         "note": "",
         "id": "ms507a5ex88n6"
-      },
-      {
-        "name": "zz",
-        "contact": "",
-        "note": "",
-        "id": "ms507kgdt8vsg"
       },
       {
         "name": "LLL",
@@ -10843,6 +10876,10 @@
     "于东旭": {
       "password": "123456",
       "role": "viewer"
+    },
+    "猪猪": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
@@ -10851,6 +10888,8 @@
     "time": "2026-08-01T01:40:14.104Z",
     "count": 335,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-01T01:40:57.474Z",
+    "configUpdatedBy": "枝枝"
   }
 }
