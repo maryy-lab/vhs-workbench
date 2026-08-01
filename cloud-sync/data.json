@@ -10814,6 +10814,10 @@
     "渝姐来啦": {
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
+    },
+    "月月的9852橱窗": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
     }
   },
   "productMapping": {
@@ -10821,14 +10825,16 @@
       "zhaoshang": ""
     },
     "楠楠好物优选1店|10000689052926": {
+      "channel": "",
       "zhaoshang": ""
     },
     "楠楠好物优选1店|10000237391702": {
-      "zhaoshang": "枝枝"
+      "channel": "",
+      "zhaoshang": ""
     },
     "月月的9852橱窗|10000689052926": {
-      "channel": "LLL",
-      "zhaoshang": "小宇宙"
+      "channel": "",
+      "zhaoshang": ""
     },
     "居家烟火小铺子521|10000381332389": {
       "channel": "",
@@ -10996,7 +11002,7 @@
     "count": 336,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-01T03:03:30.573Z",
+    "configUpdated": "2026-08-01T03:05:14.380Z",
     "configUpdatedBy": "枝枝"
   }
 }
