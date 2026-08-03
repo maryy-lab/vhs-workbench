@@ -1282,7 +1282,7 @@ function showShareModal(url){
 
 // ===================== State =====================
 const LS_KEY = 'vhs_workbench_v2';
-let state = { orders: [], talents: [], mapping: {}, productMapping: {}, products: [], personnel: { channels: [], zhaoshangs: [] }, users: {} };
+let state = { orders: [], talents: [], mapping: {}, productMapping: {}, products: [], personnel: { channels: [], zhaoshangs: [] }, users: {}, _deleted: { channels: {}, zhaoshangs: {}, users: {} } };
 let charts = {};
 let pendingMappings = {}; // 待保存的映射修改
 let serverStatus = null;
@@ -1416,6 +1416,13 @@ async function loadData() {
       (data.personnel.zhaoshangs||[]).forEach(p => { if(p.name && !zsNames.has(p.name)){ state.personnel.zhaoshangs.push(p); zsNames.add(p.name); } });
       savePersonnelData();
     }
+    // 合并 _deleted 删除记录
+    if(data._deleted){
+      if(!state._deleted) state._deleted = { channels: {}, zhaoshangs: {}, users: {} };
+      state._deleted.channels = { ...(data._deleted.channels||{}), ...(state._deleted.channels||{}) };
+      state._deleted.zhaoshangs = { ...(data._deleted.zhaoshangs||{}), ...(state._deleted.zhaoshangs||{}) };
+      state._deleted.users = { ...(data._deleted.users||{}), ...(state._deleted.users||{}) };
+    }
     console.log('[loadData] 使用注入数据: 订单', state.orders.length, '达人', state.talents.length);
     return;
   }
@@ -1506,6 +1513,13 @@ async function loadData() {
             }
             if(data._meta){
               state._meta = data._meta;
+            }
+            // 加载云端删除记录（合并到本地，确保删除操作跨设备同步）
+            if(data._deleted){
+              if(!state._deleted) state._deleted = { channels: {}, zhaoshangs: {}, users: {} };
+              state._deleted.channels = { ...(data._deleted.channels||{}), ...(state._deleted.channels||{}) };
+              state._deleted.zhaoshangs = { ...(data._deleted.zhaoshangs||{}), ...(state._deleted.zhaoshangs||{}) };
+              state._deleted.users = { ...(data._deleted.users||{}), ...(state._deleted.users||{}) };
             }
             githubDataLoaded = true;
             cloudDataLoaded = true;
@@ -1658,6 +1672,17 @@ async function saveConfigToGitHub(silent){
     existing._meta.configUpdated = new Date().toISOString();
     existing._meta.configUpdatedBy = currentUser || 'unknown';
 
+    // 合并删除记录（云端 + 本地的并集），然后过滤掉已删除的项
+    const localDeleted = state._deleted || { channels: {}, zhaoshangs: {}, users: {} };
+    existing._deleted = existing._deleted || { channels: {}, zhaoshangs: {}, users: {} };
+    existing._deleted.channels = { ...(existing._deleted.channels||{}), ...(localDeleted.channels||{}) };
+    existing._deleted.zhaoshangs = { ...(existing._deleted.zhaoshangs||{}), ...(localDeleted.zhaoshangs||{}) };
+    existing._deleted.users = { ...(existing._deleted.users||{}), ...(localDeleted.users||{}) };
+    // 应用删除：过滤掉已删除的渠道/招商/用户
+    if(existing.personnel?.channels) existing.personnel.channels = existing.personnel.channels.filter(c => !existing._deleted.channels[c.name]);
+    if(existing.personnel?.zhaoshangs) existing.personnel.zhaoshangs = existing.personnel.zhaoshangs.filter(z => !existing._deleted.zhaoshangs[z.name]);
+    if(existing.users) Object.keys(existing._deleted.users || {}).forEach(name => { delete existing.users[name]; });
+
     // 编码并上传
     if(statusEl) statusEl.textContent = '正在上传配置...';
     const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(existing, null, 2))));
@@ -1708,6 +1733,15 @@ async function saveConfigToGitHub(silent){
         latestExisting._meta = latestExisting._meta || {};
         latestExisting._meta.configUpdated = new Date().toISOString();
         latestExisting._meta.configUpdatedBy = currentUser || 'unknown';
+        // 合并删除记录 + 过滤已删除项（与初次保存逻辑一致）
+        const localDeleted2 = state._deleted || { channels: {}, zhaoshangs: {}, users: {} };
+        latestExisting._deleted = latestExisting._deleted || { channels: {}, zhaoshangs: {}, users: {} };
+        latestExisting._deleted.channels = { ...(latestExisting._deleted.channels||{}), ...(localDeleted2.channels||{}) };
+        latestExisting._deleted.zhaoshangs = { ...(latestExisting._deleted.zhaoshangs||{}), ...(localDeleted2.zhaoshangs||{}) };
+        latestExisting._deleted.users = { ...(latestExisting._deleted.users||{}), ...(localDeleted2.users||{}) };
+        if(latestExisting.personnel?.channels) latestExisting.personnel.channels = latestExisting.personnel.channels.filter(c => !latestExisting._deleted.channels[c.name]);
+        if(latestExisting.personnel?.zhaoshangs) latestExisting.personnel.zhaoshangs = latestExisting.personnel.zhaoshangs.filter(z => !latestExisting._deleted.zhaoshangs[z.name]);
+        if(latestExisting.users) Object.keys(latestExisting._deleted.users || {}).forEach(name => { delete latestExisting.users[name]; });
         const retryContent = btoa(unescape(encodeURIComponent(JSON.stringify(latestExisting, null, 2))));
         putResp = await fetchWithFallback(GH_API_BASE, {
           method: 'PUT',
@@ -2609,6 +2643,8 @@ function savePersonnel(){
     if(state.personnel[key].find(x => x.name === name)){ toast('该姓名已存在','error'); return; }
     data.id = uid();
     state.personnel[key].push(data);
+    // 如果之前删除过同名人员，清除删除记录（允许重新添加）
+    if(state._deleted?.[key]?.[name]) delete state._deleted[key][name];
   }
   savePersonnelData();
   closePersonnelModal();
@@ -2636,6 +2672,10 @@ function deletePersonnel(type, id){
   if(!confirm(msg)) return;
   // 1. 从人员列表删除
   state.personnel[key] = list.filter(x => x.id !== id);
+  // 1b. 记录删除操作，用于跨设备同步删除
+  if(!state._deleted) state._deleted = { channels: {}, zhaoshangs: {}, users: {} };
+  if(!state._deleted[key]) state._deleted[key] = {};
+  state._deleted[key][p.name] = Date.now();
   // 2. 清理达人中的渠道/招商分配
   if(talentCount > 0){
     (state.talents||[]).forEach(t => { if(t[field] === p.name) t[field] = ''; });
@@ -3091,6 +3131,8 @@ function addUser(){
   if(name === ADMIN_NAME){ toast('管理员姓名不可使用','error'); return; }
   if(state.users[name]){ toast('该用户已存在','error'); return; }
   state.users[name] = { password: pwd, role };
+  // 如果之前删除过同名用户，清除删除记录（允许重新添加）
+  if(state._deleted?.users?.[name]) delete state._deleted.users[name];
   saveUsersData();
   document.getElementById('newUserName').value = '';
   document.getElementById('newUserPwd').value = '';
@@ -3127,6 +3169,9 @@ function deleteUser(name){
   if(name === ADMIN_NAME){ toast('管理员不可删除','error'); return; }
   if(!confirm(`确认删除用户「${name}」？`)) return;
   delete state.users[name];
+  // 记录删除操作，用于跨设备同步删除
+  if(!state._deleted) state._deleted = { channels: {}, zhaoshangs: {}, users: {} };
+  state._deleted.users[name] = Date.now();
   saveUsersData();
   renderUserList();
   toast(`已删除用户「${name}」`, 'success');
