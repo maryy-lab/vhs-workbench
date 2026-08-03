@@ -332,19 +332,20 @@ function applyMapping(orders, mapping) {
   }));
 }
 
-// ============ 从仓库已有的 data.json 读取配置（保留用户在云端做的修改） ============
+// ============ 从仓库已有的 data.json 读取配置和旧订单（保留用户在云端做的修改 + 历史订单） ============
 async function readExistingConfig() {
   try {
     if (fs.existsSync(OUTPUT_FILE)) {
       const raw = fs.readFileSync(OUTPUT_FILE, 'utf-8');
       const data = JSON.parse(raw);
-      log(`从已有 data.json 读取配置: ${Object.keys(data.mapping || {}).length} 个映射, ${Object.keys(data.users || {}).length} 个用户, ${(data.personnel?.channels||[]).length} 个渠道, ${(data.personnel?.zhaoshangs||[]).length} 个招商`);
+      log(`从已有 data.json 读取配置: ${Object.keys(data.mapping || {}).length} 个映射, ${Object.keys(data.users || {}).length} 个用户, ${(data.personnel?.channels||[]).length} 个渠道, ${(data.personnel?.zhaoshangs||[]).length} 个招商, ${(data.orders||[]).length} 条旧订单`);
       return {
         mapping: data.mapping || {},
         users: data.users || {},
         personnel: data.personnel || { channels: [], zhaoshangs: [] },
         products: data.products || [],
-        productMapping: data.productMapping || {}
+        productMapping: data.productMapping || {},
+        orders: data.orders || []
       };
     }
   } catch (e) {
@@ -352,7 +353,8 @@ async function readExistingConfig() {
   }
   return {
     mapping: {}, users: {}, personnel: { channels: [], zhaoshangs: [] },
-    products: [], productMapping: {}
+    products: [], productMapping: {},
+    orders: []
   };
 }
 
@@ -476,7 +478,27 @@ async function main() {
       }
     }
 
-    // 4. 转换数据
+    // 4. 合并旧订单（保留30天内，避免10天API窗口外的订单丢失）
+    const KEEP_DAYS = 30;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const cutoffSec = nowSec - KEEP_DAYS * 24 * 3600;
+
+    // 用新获取的订单ID建立去重集合
+    const newOrderIds = new Set(detailedOrders.map(o => o.id));
+    let mergedCount = 0;
+    const existingOrders = existingConfig.orders || [];
+    for (const oldOrder of existingOrders) {
+      if (newOrderIds.has(oldOrder.id)) continue; // 新批次已有，跳过
+      // 检查是否在 KEEP_DAYS 天内（用 createTime 或 payTime 判断）
+      const orderTime = oldOrder.createTime || oldOrder.payTime || 0;
+      if (orderTime && orderTime > cutoffSec) {
+        detailedOrders.push(oldOrder);
+        mergedCount++;
+      }
+    }
+    log(`合并旧订单: 新获取 ${fetched} 条，保留 ${mergedCount} 条旧订单（${KEEP_DAYS}天内），总计 ${detailedOrders.length} 条`);
+
+    // 5. 转换数据
     const mappedOrders = applyMapping(detailedOrders, userConfig.mapping);
     const talents = extractTalents(detailedOrders, userConfig.mapping);
 
@@ -529,9 +551,10 @@ async function main() {
     console.log('');
     console.log('═══════════════════════════════════════════');
     console.log('  ✅ 云端同步完成！');
-    console.log(`  订单列表: ${orderList.length} 条`);
+    console.log(`  订单列表(API): ${orderList.length} 条`);
     console.log(`  详情成功: ${fetched} 条`);
     console.log(`  详情失败(已兜底): ${errors} 条`);
+    console.log(`  合并旧订单: ${mergedCount} 条`);
     console.log(`  最终入库: ${mappedOrders.length} 条`);
     console.log(`  达人数: ${talents.length}`);
     console.log(`  数据文件: cloud-sync/data.json`);
