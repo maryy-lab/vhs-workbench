@@ -1682,6 +1682,15 @@ async function saveConfigToGitHub(silent){
     if(existing.personnel?.channels) existing.personnel.channels = existing.personnel.channels.filter(c => !existing._deleted.channels[c.name]);
     if(existing.personnel?.zhaoshangs) existing.personnel.zhaoshangs = existing.personnel.zhaoshangs.filter(z => !existing._deleted.zhaoshangs[z.name]);
     if(existing.users) Object.keys(existing._deleted.users || {}).forEach(name => { delete existing.users[name]; });
+    // 清理 mapping/productMapping 中引用已删除渠道/招商的字段，防止悬空引用
+    if(existing.mapping) Object.keys(existing.mapping).forEach(k => {
+      if(existing.mapping[k]?.channel && existing._deleted.channels[existing.mapping[k].channel]) existing.mapping[k].channel = '';
+      if(existing.mapping[k]?.zhaoshang && existing._deleted.zhaoshangs[existing.mapping[k].zhaoshang]) existing.mapping[k].zhaoshang = '';
+    });
+    if(existing.productMapping) Object.keys(existing.productMapping).forEach(k => {
+      if(existing.productMapping[k]?.channel && existing._deleted.channels[existing.productMapping[k].channel]) existing.productMapping[k].channel = '';
+      if(existing.productMapping[k]?.zhaoshang && existing._deleted.zhaoshangs[existing.productMapping[k].zhaoshang]) existing.productMapping[k].zhaoshang = '';
+    });
 
     // 编码并上传
     if(statusEl) statusEl.textContent = '正在上传配置...';
@@ -1742,6 +1751,15 @@ async function saveConfigToGitHub(silent){
         if(latestExisting.personnel?.channels) latestExisting.personnel.channels = latestExisting.personnel.channels.filter(c => !latestExisting._deleted.channels[c.name]);
         if(latestExisting.personnel?.zhaoshangs) latestExisting.personnel.zhaoshangs = latestExisting.personnel.zhaoshangs.filter(z => !latestExisting._deleted.zhaoshangs[z.name]);
         if(latestExisting.users) Object.keys(latestExisting._deleted.users || {}).forEach(name => { delete latestExisting.users[name]; });
+        // 清理 mapping/productMapping 中引用已删除渠道/招商的字段
+        if(latestExisting.mapping) Object.keys(latestExisting.mapping).forEach(k => {
+          if(latestExisting.mapping[k]?.channel && latestExisting._deleted.channels[latestExisting.mapping[k].channel]) latestExisting.mapping[k].channel = '';
+          if(latestExisting.mapping[k]?.zhaoshang && latestExisting._deleted.zhaoshangs[latestExisting.mapping[k].zhaoshang]) latestExisting.mapping[k].zhaoshang = '';
+        });
+        if(latestExisting.productMapping) Object.keys(latestExisting.productMapping).forEach(k => {
+          if(latestExisting.productMapping[k]?.channel && latestExisting._deleted.channels[latestExisting.productMapping[k].channel]) latestExisting.productMapping[k].channel = '';
+          if(latestExisting.productMapping[k]?.zhaoshang && latestExisting._deleted.zhaoshangs[latestExisting.productMapping[k].zhaoshang]) latestExisting.productMapping[k].zhaoshang = '';
+        });
         const retryContent = btoa(unescape(encodeURIComponent(JSON.stringify(latestExisting, null, 2))));
         putResp = await fetchWithFallback(GH_API_BASE, {
           method: 'PUT',
