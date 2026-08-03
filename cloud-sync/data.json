@@ -12377,6 +12377,22 @@
     "听旧雨.2": {
       "channel": "听旧雨",
       "zhaoshang": ""
+    },
+    "小王家啊": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "小燕子百货优选店": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
+    },
+    "心想事成Zndr": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "杨妹甄选百货": {
+      "channel": "魏佳旭",
+      "zhaoshang": ""
     }
   },
   "productMapping": {
@@ -12399,6 +12415,12 @@
       "zhaoshang": "小宇宙"
     },
     "听旧雨.2|10000596738846": {
+      "zhaoshang": "小宇宙"
+    },
+    "杨妹甄选百货|10000083279642": {
+      "zhaoshang": "枝枝"
+    },
+    "杨妹甄选百货|10000271156085": {
       "zhaoshang": "小宇宙"
     }
   },
@@ -12538,7 +12560,7 @@
     "count": 386,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-03T16:49:04.998Z",
+    "configUpdated": "2026-08-03T16:51:21.102Z",
     "configUpdatedBy": "枝枝"
   }
 }
