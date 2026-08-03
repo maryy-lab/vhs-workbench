@@ -1729,7 +1729,7 @@ async function updateConnectionStatus() {
         staleMsg = `⚠️ 数据已 ${Math.floor(ageMin/60)} 小时未更新（上次更新: ${new Date(metaTime).toLocaleString('zh-CN')}）`;
         if (syncErr) staleMsg += ` | 同步错误: ${syncErr}`;
         staleMsg += ' | <a href="javascript:retryLoadCloudData()" style="color:#fff;text-decoration:underline">点此重新加载</a>';
-        staleMsg += ' | <a href="https://github.com/maryy-lab/vhs-workbench/actions/workflows/sync.yml" target="_blank" style="color:#fff;text-decoration:underline;font-weight:bold">🔧 点此手动触发同步</a>';
+        staleMsg += ' | <a href="javascript:triggerCloudSync()" style="color:#fff;text-decoration:underline;font-weight:bold">🔧 点此手动触发同步</a>';
       }
     }
     if (isStale) {
@@ -1738,7 +1738,7 @@ async function updateConnectionStatus() {
     } else {
       banner.className = 'banner online';
       const updateInfo = metaTime ? `最近更新: ${new Date(metaTime).toLocaleString('zh-CN')}` : '';
-      bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每10分钟自动更新${updateInfo ? ' | ' + updateInfo : ''} | <a href="https://github.com/maryy-lab/vhs-workbench/actions/workflows/sync.yml" target="_blank" style="color:#fff;text-decoration:underline">手动同步</a>`;
+      bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每10分钟自动更新${updateInfo ? ' | ' + updateInfo : ''} | <a href="javascript:triggerCloudSync()" style="color:#fff;text-decoration:underline">手动同步</a>`;
     }
   } else if (isCloudMode && cloudBlobId) {
     badge.className = 'api-status online';
@@ -3207,9 +3207,9 @@ async function testConnection(){
 
 async function triggerSync(){
   if(!Server.connected){
-    if(githubDataLoaded){
-      toast('云端模式：如修改了人员/用户，请到「同步设置」点「保存配置到云端」','info');
-      switchTab('sync');
+    if(githubDataLoaded || isCloudMode){
+      // 云端模式：通过 GitHub API 直接触发 workflow_dispatch
+      await triggerCloudSync();
     } else {
       toast('同步服务未启动','error');
     }
@@ -3222,9 +3222,8 @@ async function triggerSync(){
 
 async function manualSync(){
   if(!Server.connected){
-    if(githubDataLoaded){
-      toast('云端模式：如修改了人员/用户，请到「同步设置」点「保存配置到云端」','info');
-      switchTab('sync');
+    if(githubDataLoaded || isCloudMode){
+      await triggerCloudSync();
     } else {
       toast('请先启动同步服务','error');
       switchTab('sync');
@@ -3232,6 +3231,64 @@ async function manualSync(){
     return;
   }
   await triggerSync();
+}
+
+// 云端手动触发同步：通过 GitHub API 触发 workflow_dispatch
+let _cloudSyncTriggering = false;
+async function triggerCloudSync(){
+  if(_cloudSyncTriggering){
+    toast('正在触发中，请稍候...','info');
+    return;
+  }
+  _cloudSyncTriggering = true;
+  const token = localStorage.getItem('gh_token') || _gt() || '';
+  if(!token){
+    toast('无法触发同步：缺少 GitHub Token，请联系管理员','error');
+    _cloudSyncTriggering = false;
+    return;
+  }
+  toast('正在触发云端同步...','info');
+  try {
+    const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/sync.yml/dispatches`;
+    const resp = await fetchWithFallback(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'token ' + token,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ref: 'main' })
+    });
+    if(resp.ok || resp.status === 204){
+      toast('✅ 同步已触发！数据约 2-3 分钟后更新，页面将自动刷新','success');
+      // 30秒后开始轮询数据更新
+      setTimeout(() => {
+        let pollCount = 0;
+        const poll = setInterval(async () => {
+          pollCount++;
+          if(pollCount > 20){ clearInterval(poll); return; } // 最多等5分钟
+          await loadCloudData();
+          const metaTime = state._meta?.time;
+          if(metaTime){
+            const ageMin = (Date.now() - new Date(metaTime).getTime()) / 60000;
+            if(ageMin < 5){
+              clearInterval(poll);
+              toast('✅ 数据已更新！','success');
+              updateConnectionStatus();
+            }
+          }
+        }, 15000); // 每15秒检查一次
+      }, 30000);
+    } else {
+      let errMsg = '触发失败: ' + resp.status;
+      try { const err = await resp.json(); errMsg = err.message || errMsg; } catch(_){}
+      toast('❌ ' + errMsg,'error');
+    }
+  } catch(e) {
+    toast('❌ 触发同步失败: ' + e.message,'error');
+  } finally {
+    _cloudSyncTriggering = false;
+  }
 }
 
 async function syncProducts(){
