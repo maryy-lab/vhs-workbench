@@ -10,10 +10,10 @@ on:
   repository_dispatch:
     types: [sync]
 
-# 并发控制：同一时间只允许一个同步运行，新的运行会取消旧的
+# 并发控制：同一时间只允许一个同步运行，新运行排队等待（不取消正在运行的同步）
 concurrency:
   group: sync-data
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
