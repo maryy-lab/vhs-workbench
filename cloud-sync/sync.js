@@ -2,13 +2,13 @@
  * 云端定时同步脚本 - GitHub Actions 专用
  * 
  * 工作流程：
- * 1. 从 jsonblob.com 下载用户配置（达人映射、人员、用户等，体积小）
- * 2. 从微信小店联盟API拉取佣金订单数据（体积大）
- * 3. 合并后保存到 data.json 文件
- * 4. GitHub Actions 自动提交 data.json 到仓库
+ * 1. 从 GitHub API 读取最新 data.json（获取用户保存的配置 + 旧订单）
+ * 2. 从微信小店联盟API拉取佣金订单数据
+ * 3. 合并新订单 + 旧订单（保留30天）+ 保留所有用户配置
+ * 4. 写入 data.json，GitHub Actions 自动提交到仓库
  * 5. 前端从 raw.githubusercontent.com 读取 data.json
  * 
- * 这样即使本机关机，GitHub Actions 也会每30分钟自动同步一次
+ * 注意：不再使用 jsonblob（经常过期导致配置丢失）
  */
 
 const axios = require('axios');
@@ -18,9 +18,9 @@ const path = require('path');
 // ============ 配置（从环境变量读取） ============
 const APPID = process.env.WX_APPID;
 const SECRET = process.env.WX_SECRET;
-const JSONBLOB_ID = process.env.JSONBLOB_ID || '019fb939-7892-704d-956b-3aa79a5df273';
 const SYNC_DAYS = parseInt(process.env.SYNC_DAYS || '7', 10);
-const CLOUD_API = 'https://jsonblob.com/api/jsonBlob';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'maryy-lab/vhs-workbench';
 const OUTPUT_FILE = path.join(__dirname, 'data.json');
 
 if (!APPID || !SECRET) {
@@ -338,7 +338,7 @@ async function readExistingConfig() {
     if (fs.existsSync(OUTPUT_FILE)) {
       const raw = fs.readFileSync(OUTPUT_FILE, 'utf-8');
       const data = JSON.parse(raw);
-      log(`从已有 data.json 读取配置: ${Object.keys(data.mapping || {}).length} 个映射, ${Object.keys(data.users || {}).length} 个用户, ${(data.personnel?.channels||[]).length} 个渠道, ${(data.personnel?.zhaoshangs||[]).length} 个招商, ${(data.orders||[]).length} 条旧订单`);
+      log(`从本地 data.json 读取配置: ${Object.keys(data.mapping || {}).length} 个映射, ${Object.keys(data.users || {}).length} 个用户, ${(data.personnel?.channels||[]).length} 个渠道, ${(data.personnel?.zhaoshangs||[]).length} 个招商, ${(data.orders||[]).length} 条旧订单`);
       return {
         mapping: data.mapping || {},
         users: data.users || {},
@@ -358,40 +358,41 @@ async function readExistingConfig() {
   };
 }
 
-// ============ 从 jsonblob 下载用户配置（体积小，GET 不会超时） ============
-async function downloadUserConfig() {
-  try {
-    const res = await axios.get(`${CLOUD_API}/${JSONBLOB_ID}`, { timeout: 15000 });
-    const data = res.data || {};
-    return {
-      mapping: data.mapping || {},
-      users: data.users || {},
-      personnel: data.personnel || { channels: [], zhaoshangs: [] },
-      products: data.products || [],
-      productMapping: data.productMapping || {}
-    };
-  } catch (e) {
-    log(`下载用户配置失败: ${e.message}，使用空配置`);
-    return {
-      mapping: {}, users: {}, personnel: { channels: [], zhaoshangs: [] },
-      products: [], productMapping: {}
-    };
+// ============ 从 GitHub API 读取最新 data.json（防止 checkout 后用户保存的配置被覆盖） ============
+async function readLatestConfigFromAPI() {
+  if (!GITHUB_TOKEN) {
+    log('GITHUB_TOKEN 未设置，跳过 API 读取（使用本地 data.json）');
+    return null;
   }
-}
-
-// ============ 上传用户配置到 jsonblob（只传配置，不传订单，体积小） ============
-async function uploadUserConfig(config) {
   try {
-    const res = await axios.put(`${CLOUD_API}/${JSONBLOB_ID}`, config, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 15000
-    });
-    log('用户配置已同步到 jsonblob');
-    return true;
+    const res = await axios.get(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/cloud-sync/data.json`,
+      {
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'User-Agent': 'sync-config-reader'
+        },
+        timeout: 15000
+      }
+    );
+    if (res.data && res.data.content) {
+      const content = Buffer.from(res.data.content, 'base64').toString('utf-8');
+      const data = JSON.parse(content);
+      log(`从 GitHub API 读取最新配置: ${Object.keys(data.mapping || {}).length} 个映射, ${Object.keys(data.users || {}).length} 个用户, ${(data.personnel?.channels||[]).length} 个渠道, ${(data.personnel?.zhaoshangs||[]).length} 个招商, ${(data.orders||[]).length} 条旧订单`);
+      return {
+        mapping: data.mapping || {},
+        users: data.users || {},
+        personnel: data.personnel || { channels: [], zhaoshangs: [] },
+        products: data.products || [],
+        productMapping: data.productMapping || {},
+        orders: data.orders || []
+      };
+    }
   } catch (e) {
-    log(`上传用户配置到 jsonblob 失败: ${e.message}`);
-    return false;
+    log(`从 GitHub API 读取配置失败: ${e.message}，使用本地 data.json`);
   }
+  return null;
 }
 
 // ============ 主流程 ============
@@ -401,26 +402,24 @@ async function main() {
   console.log('  视频号出单数据 - GitHub Actions 云端同步');
   console.log('═══════════════════════════════════════════');
   console.log(`  同步范围: 最近 ${SYNC_DAYS} 天`);
-  console.log(`  云端ID: ${JSONBLOB_ID}`);
+  console.log(`  配置来源: GitHub API + 本地 data.json`);
   console.log(`  运行时间: ${new Date().toISOString()}`);
   console.log('');
 
   try {
-    // 1. 读取已有配置（优先从仓库 data.json，再从 jsonblob 覆盖）
+    // 1. 读取已有配置（优先从 GitHub API 读取最新版本，防止用户保存的配置被覆盖）
     log('读取已有配置...');
-    const existingConfig = await readExistingConfig();
-    let userConfig = existingConfig;
+    let existingConfig = await readExistingConfig();
     
-    // 尝试从 jsonblob 下载更新的配置（如果 jsonblob 可用的话）
-    log('尝试从 jsonblob 下载配置...');
-    const blobConfig = await downloadUserConfig();
-    // jsonblob 的配置优先级更高（如果有的话）
-    if (Object.keys(blobConfig.mapping).length > 0) userConfig.mapping = blobConfig.mapping;
-    if (Object.keys(blobConfig.users).length > 0) userConfig.users = blobConfig.users;
-    if (blobConfig.personnel && (blobConfig.personnel.channels?.length || blobConfig.personnel.zhaoshangs?.length)) userConfig.personnel = blobConfig.personnel;
-    if (blobConfig.products.length > 0) userConfig.products = blobConfig.products;
-    if (Object.keys(blobConfig.productMapping).length > 0) userConfig.productMapping = blobConfig.productMapping;
-    log(`最终配置: ${Object.keys(userConfig.mapping).length} 个映射, ${Object.keys(userConfig.users).length} 个用户`);
+    // 从 GitHub API 读取最新 data.json（checkout 后用户可能已保存新配置）
+    log('从 GitHub API 读取最新配置...');
+    const latestConfig = await readLatestConfigFromAPI();
+    if (latestConfig) {
+      // API 版本更新，使用它的配置和旧订单
+      existingConfig = latestConfig;
+    }
+    let userConfig = existingConfig;
+    log(`最终配置: ${Object.keys(userConfig.mapping).length} 个映射, ${Object.keys(userConfig.users).length} 个用户, ${(userConfig.personnel?.channels||[]).length} 个渠道, ${(userConfig.personnel?.zhaoshangs||[]).length} 个招商`);
 
     // 2. 获取订单列表
     const endTime = Math.floor(Date.now() / 1000);
@@ -537,16 +536,6 @@ async function main() {
 
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2));
     log(`数据已保存到 ${OUTPUT_FILE} (${(JSON.stringify(output).length / 1024).toFixed(1)} KB)`);
-
-    // 6. 同时上传用户配置到 jsonblob（供前端读取用户编辑的配置）
-    await uploadUserConfig({
-      mapping: userConfig.mapping,
-      users: userConfig.users,
-      personnel: userConfig.personnel,
-      products: userConfig.products,
-      productMapping: userConfig.productMapping,
-      _meta: { source: 'github-actions-config', time: new Date().toISOString() }
-    });
 
     console.log('');
     console.log('═══════════════════════════════════════════');
