@@ -1628,13 +1628,32 @@ async function saveConfigToGitHub(silent){
 
     if (!existing || !sha) throw new Error('无法读取云端数据');
 
-    // 用本地配置覆盖（保留云端订单，只更新配置部分）
-    // 安全检查：只有本地有数据时才覆盖，防止空本地数据清空云端配置
-    if(state.users && Object.keys(state.users).length > 0) existing.users = state.users;
-    if(state.personnel && (state.personnel.channels?.length || state.personnel.zhaoshangs?.length)) existing.personnel = state.personnel;
-    if(state.mapping && Object.keys(state.mapping).length > 0) existing.mapping = state.mapping;
-    if(state.productMapping && Object.keys(state.productMapping).length > 0) existing.productMapping = state.productMapping;
-    if(state.products && state.products.length > 0) existing.products = state.products;
+    // 合并本地配置到云端最新数据（而非覆盖），确保多设备操作不丢配置
+    // 合并策略：云端优先作为基础，本地同 key 覆盖（本地优先），云端独有 key 保留
+    if(state.users && Object.keys(state.users).length > 0) existing.users = { ...(existing.users||{}), ...state.users };
+    if(state.personnel && (state.personnel.channels?.length || state.personnel.zhaoshangs?.length)) {
+      const ep = existing.personnel || { channels: [], zhaoshangs: [] };
+      // channels: 按 name 合并，本地同名覆盖云端，云端独有保留
+      const mergedCh = [...(ep.channels||[])];
+      const chMap = new Map(mergedCh.map((p,i) => [p.name, i]));
+      (state.personnel.channels||[]).forEach(p => {
+        if(p.name) { if(chMap.has(p.name)) mergedCh[chMap.get(p.name)] = p; else { mergedCh.push(p); chMap.set(p.name, mergedCh.length-1); } }
+      });
+      // zhaoshangs: 同理
+      const mergedZs = [...(ep.zhaoshangs||[])];
+      const zsMap = new Map(mergedZs.map((p,i) => [p.name, i]));
+      (state.personnel.zhaoshangs||[]).forEach(p => {
+        if(p.name) { if(zsMap.has(p.name)) mergedZs[zsMap.get(p.name)] = p; else { mergedZs.push(p); zsMap.set(p.name, mergedZs.length-1); } }
+      });
+      existing.personnel = { channels: mergedCh, zhaoshangs: mergedZs };
+    }
+    if(state.mapping && Object.keys(state.mapping).length > 0) existing.mapping = { ...(existing.mapping||{}), ...state.mapping };
+    if(state.productMapping && Object.keys(state.productMapping).length > 0) existing.productMapping = { ...(existing.productMapping||{}), ...state.productMapping };
+    if(state.products && state.products.length > 0) {
+      const ep2 = existing.products || [];
+      const pidSet = new Set(state.products.map(p => p.product_id || p.id));
+      existing.products = [...state.products, ...ep2.filter(p => !pidSet.has(p.product_id || p.id))];
+    }
     existing._meta = existing._meta || {};
     existing._meta.configUpdated = new Date().toISOString();
     existing._meta.configUpdatedBy = currentUser || 'unknown';
@@ -1663,12 +1682,29 @@ async function saveConfigToGitHub(silent){
         const fileData = await retryResp.json();
         sha = fileData.sha;
         const latestExisting = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
-        // 重新应用本地配置到最新版本
-        if(state.users && Object.keys(state.users).length > 0) latestExisting.users = state.users;
-        if(state.personnel && (state.personnel.channels?.length || state.personnel.zhaoshangs?.length)) latestExisting.personnel = state.personnel;
-        if(state.mapping && Object.keys(state.mapping).length > 0) latestExisting.mapping = state.mapping;
-        if(state.productMapping && Object.keys(state.productMapping).length > 0) latestExisting.productMapping = state.productMapping;
-        if(state.products && state.products.length > 0) latestExisting.products = state.products;
+        // 合并本地配置到最新云端版本（而非覆盖），确保多设备操作不丢配置
+        if(state.users && Object.keys(state.users).length > 0) latestExisting.users = { ...(latestExisting.users||{}), ...state.users };
+        if(state.personnel && (state.personnel.channels?.length || state.personnel.zhaoshangs?.length)) {
+          const ep = latestExisting.personnel || { channels: [], zhaoshangs: [] };
+          const mergedCh = [...(ep.channels||[])];
+          const chMap = new Map(mergedCh.map((p,i) => [p.name, i]));
+          (state.personnel.channels||[]).forEach(p => {
+            if(p.name) { if(chMap.has(p.name)) mergedCh[chMap.get(p.name)] = p; else { mergedCh.push(p); chMap.set(p.name, mergedCh.length-1); } }
+          });
+          const mergedZs = [...(ep.zhaoshangs||[])];
+          const zsMap = new Map(mergedZs.map((p,i) => [p.name, i]));
+          (state.personnel.zhaoshangs||[]).forEach(p => {
+            if(p.name) { if(zsMap.has(p.name)) mergedZs[zsMap.get(p.name)] = p; else { mergedZs.push(p); zsMap.set(p.name, mergedZs.length-1); } }
+          });
+          latestExisting.personnel = { channels: mergedCh, zhaoshangs: mergedZs };
+        }
+        if(state.mapping && Object.keys(state.mapping).length > 0) latestExisting.mapping = { ...(latestExisting.mapping||{}), ...state.mapping };
+        if(state.productMapping && Object.keys(state.productMapping).length > 0) latestExisting.productMapping = { ...(latestExisting.productMapping||{}), ...state.productMapping };
+        if(state.products && state.products.length > 0) {
+          const ep2 = latestExisting.products || [];
+          const pidSet = new Set(state.products.map(p => p.product_id || p.id));
+          latestExisting.products = [...state.products, ...ep2.filter(p => !pidSet.has(p.product_id || p.id))];
+        }
         latestExisting._meta = latestExisting._meta || {};
         latestExisting._meta.configUpdated = new Date().toISOString();
         latestExisting._meta.configUpdatedBy = currentUser || 'unknown';
