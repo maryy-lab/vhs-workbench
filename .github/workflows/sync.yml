@@ -1,7 +1,7 @@
 name: 视频号数据云端同步
 
 on:
-  # 每10分钟自动运行一次（GitHub cron 可能延迟/跳过，作为备用）
+  # 每10分钟自动运行一次（GitHub cron 可能延迟/跳过，作为备用 + 断链重启）
   schedule:
     - cron: '*/10 * * * *'
   # 手动触发
@@ -10,6 +10,11 @@ on:
   repository_dispatch:
     types: [sync]
 
+# 并发控制：同一时间只允许一个同步运行，新的运行会取消旧的
+concurrency:
+  group: sync-data
+  cancel-in-progress: true
+
 permissions:
   contents: write
   issues: write
@@ -17,6 +22,7 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -58,9 +64,12 @@ jobs:
       # 同步失败时创建 Issue 通知
       - name: 创建失败通知 Issue
         if: failure() && steps.sync.outcome == 'failure'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # 先确保 label 存在
+          gh label create "sync-failure" --color "D73A4A" 2>/dev/null || true
           # 检查是否已有打开的同步失败 Issue
           EXISTING=$(gh issue list --label "sync-failure" --state open --json number -q '.[0].number' 2>/dev/null || echo "")
           if [ -z "$EXISTING" ]; then
@@ -85,6 +94,7 @@ jobs:
       # 同步成功时关闭失败通知 Issue
       - name: 关闭失败通知 Issue
         if: success()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -94,9 +104,9 @@ jobs:
             echo "已关闭 Issue #$num"
           done
 
-      # 自循环：触发下一次同步（彻底不依赖 GitHub cron）
+      # 自循环：仅在同步成功时触发下一次（失败时不触发，等待 cron 每10分钟重启）
       - name: 触发下一次同步
-        if: always()
+        if: success()
         env:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
