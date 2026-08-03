@@ -12323,7 +12323,7 @@
   ],
   "mapping": {
     "贾铁锤的工厂直选": {
-      "channel": "",
+      "channel": "猪猪",
       "zhaoshang": "大海"
     },
     "乐子每一天": {
@@ -12333,6 +12333,50 @@
     "山村阿刚": {
       "channel": "魏佳旭",
       "zhaoshang": "大海"
+    },
+    "🧚🏻‍♀️冯冯居家小铺": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "阿妹百货优选": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "广东阳妈": {
+      "channel": "听旧雨",
+      "zhaoshang": "猪猪"
+    },
+    "国货甄选工厂5号店": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "居家烟火小铺子521": {
+      "channel": "LLL",
+      "zhaoshang": "大海"
+    },
+    "可馨优品": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "沐槿家优选": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "沐浴露沐浴油沐浴露": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
+    },
+    "胖阿妹好物优选": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "平台精选1号店": {
+      "channel": "魏佳旭",
+      "zhaoshang": "大海"
+    },
+    "听旧雨.2": {
+      "channel": "听旧雨",
+      "zhaoshang": ""
     }
   },
   "productMapping": {
@@ -12346,6 +12390,15 @@
     },
     "楠楠好物优选1店|10000689052926": {
       "channel": "猪猪",
+      "zhaoshang": "小宇宙"
+    },
+    "听旧雨.2|10000083279642": {
+      "zhaoshang": "枝枝"
+    },
+    "听旧雨.2|10000980039154": {
+      "zhaoshang": "小宇宙"
+    },
+    "听旧雨.2|10000596738846": {
       "zhaoshang": "小宇宙"
     }
   },
@@ -12484,6 +12537,8 @@
     "time": "2026-08-03T16:48:02.019Z",
     "count": 386,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-03T16:49:04.998Z",
+    "configUpdatedBy": "枝枝"
   }
 }
