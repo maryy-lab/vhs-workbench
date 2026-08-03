@@ -80,12 +80,15 @@ async function getToken() {
   if (accessToken && Date.now() < tokenExpiry - 300000) {
     return accessToken;
   }
-  log('正在获取 access_token...');
+  log('正在获取 access_token (stable_token)...');
   const result = await retryWithBackoff(async () => {
-    const res = await axios.get('https://api.weixin.qq.com/cgi-bin/token', {
-      params: { grant_type: 'client_credential', appid: APPID, secret: SECRET },
-      timeout: 15000
-    });
+    // 使用 stable_token 接口，不受 cgi-bin/token 每日配额限制
+    const res = await axios.post('https://api.weixin.qq.com/cgi-bin/stable_token', {
+      grant_type: 'client_credential',
+      appid: APPID,
+      secret: SECRET,
+      force_refresh: false
+    }, { timeout: 15000 });
     if (res.data.errcode) {
       throw new Error(`获取token失败: ${res.data.errcode} ${res.data.errmsg}`);
     }
