@@ -12323,7 +12323,7 @@
   ],
   "mapping": {
     "贾铁锤的工厂直选": {
-      "channel": "zz",
+      "channel": "",
       "zhaoshang": "大海"
     },
     "乐子每一天": {
@@ -12348,12 +12348,6 @@
         "contact": "",
         "note": "",
         "id": "ms507a5ex88n6"
-      },
-      {
-        "name": "zz",
-        "contact": "",
-        "note": "",
-        "id": "ms507kgdt8vsg"
       },
       {
         "name": "LLL",
@@ -12426,10 +12420,6 @@
       "password": "123456",
       "role": "viewer"
     },
-    "zz": {
-      "password": "123456",
-      "role": "viewer"
-    },
     "LLL": {
       "password": "123456",
       "role": "viewer"
@@ -12470,6 +12460,8 @@
     "time": "2026-08-03T16:40:19.165Z",
     "count": 386,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-03T16:42:24.665Z",
+    "configUpdatedBy": "枝枝"
   }
 }
