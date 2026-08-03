@@ -345,7 +345,8 @@ async function readExistingConfig() {
         personnel: data.personnel || { channels: [], zhaoshangs: [] },
         products: data.products || [],
         productMapping: data.productMapping || {},
-        orders: data.orders || []
+        orders: data.orders || [],
+        _deleted: data._deleted || { channels: {}, zhaoshangs: {}, users: {} }
       };
     }
   } catch (e) {
@@ -354,7 +355,8 @@ async function readExistingConfig() {
   return {
     mapping: {}, users: {}, personnel: { channels: [], zhaoshangs: [] },
     products: [], productMapping: {},
-    orders: []
+    orders: [],
+    _deleted: { channels: {}, zhaoshangs: {}, users: {} }
   };
 }
 
@@ -386,7 +388,8 @@ async function readLatestConfigFromAPI() {
         personnel: data.personnel || { channels: [], zhaoshangs: [] },
         products: data.products || [],
         productMapping: data.productMapping || {},
-        orders: data.orders || []
+        orders: data.orders || [],
+        _deleted: data._deleted || { channels: {}, zhaoshangs: {}, users: {} }
       };
     }
   } catch (e) {
@@ -525,6 +528,7 @@ async function main() {
       personnel: userConfig.personnel,
       users: userConfig.users,
       products: userConfig.products,
+      _deleted: userConfig._deleted || { channels: {}, zhaoshangs: {}, users: {} },
       _meta: {
         source: 'github-actions',
         time: new Date().toISOString(),
