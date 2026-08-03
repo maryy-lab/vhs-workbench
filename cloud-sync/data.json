@@ -12378,6 +12378,12 @@
         "contact": "",
         "note": "",
         "id": "ms508rczblixy"
+      },
+      {
+        "name": "猪猪",
+        "contact": "",
+        "note": "",
+        "id": "msdgjkmu36au2"
       }
     ],
     "zhaoshangs": [
@@ -12447,6 +12453,10 @@
     "于东旭": {
       "password": "123456",
       "role": "viewer"
+    },
+    "猪猪": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
@@ -12461,7 +12471,7 @@
     "count": 386,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-03T16:42:24.665Z",
+    "configUpdated": "2026-08-03T16:42:45.081Z",
     "configUpdatedBy": "枝枝"
   }
 }
