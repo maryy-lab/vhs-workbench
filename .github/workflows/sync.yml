@@ -42,8 +42,8 @@ jobs:
         env:
           WX_APPID: ${{ secrets.WX_APPID }}
           WX_SECRET: ${{ secrets.WX_SECRET }}
-          JSONBLOB_ID: ${{ secrets.JSONBLOB_ID }}
           SYNC_DAYS: '7'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node cloud-sync/sync.js
 
       - name: 提交数据文件
