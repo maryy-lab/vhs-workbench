@@ -756,7 +756,7 @@ const GITHUB_DATA_URLS = [
   'https://raw.githubusercontent.com/maryy-lab/vhs-workbench/main/cloud-sync/data.json'  // raw备用
 ];
 let githubDataLoaded = false;
-const DEFAULT_ROOM_ID = '019fb939-7892-704d-956b-3aa79a5df273'; // 云端房间ID，所有设备共享用户/映射/人员数据
+const DEFAULT_ROOM_ID = '019fc835-3c29-782a-a9f2-4e6237bf51d5'; // jsonblob 临时备份（24h过期，仅用于实时同步，配置主存储在 data.json）
 let cloudBlobId = null;
 let cloudLastSync = null;
 let cloudTimer = null;
@@ -1599,29 +1599,34 @@ async function saveConfigToGitHub(silent){
   try {
     let existing, sha;
 
-    // 方式1：同源读取 data.json（不经过 api.github.com，避免被墙）
+    // 方式1：通过 API 读取（优先，确保 SHA 正确，避免 Pages 缓存导致 409）
     try {
-      const rawResp = await fetch('cloud-sync/data.json?t=' + Date.now());
-      if (rawResp.ok) {
-        const buffer = await rawResp.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        sha = await computeGitBlobSha(bytes);
-        const text = new TextDecoder('utf-8').decode(bytes);
-        existing = JSON.parse(text);
-      }
-    } catch(e) { /* 同源读取失败，走 API */ }
-
-    // 方式2：通过 API 读取（带代理兜底）
-    if (!existing || !sha) {
       if(statusEl) statusEl.textContent = '正在读取云端数据...';
       const resp = await fetchWithFallback(GH_API_BASE, {
         headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
       });
-      if(!resp.ok) throw new Error('读取云端数据失败: ' + resp.status);
-      const fileData = await resp.json();
-      sha = fileData.sha;
-      existing = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+      if(resp.ok) {
+        const fileData = await resp.json();
+        sha = fileData.sha;
+        existing = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+      }
+    } catch(e) { /* API 读取失败，尝试同源 */ }
+
+    // 方式2：同源读取 data.json（API 被墙时的兜底）
+    if (!existing || !sha) {
+      try {
+        const rawResp = await fetch('cloud-sync/data.json?t=' + Date.now());
+        if (rawResp.ok) {
+          const buffer = await rawResp.arrayBuffer();
+          const bytes = new Uint8Array(buffer);
+          sha = await computeGitBlobSha(bytes);
+          const text = new TextDecoder('utf-8').decode(bytes);
+          existing = JSON.parse(text);
+        }
+      } catch(e) { /* 同源读取也失败 */ }
     }
+
+    if (!existing || !sha) throw new Error('无法读取云端数据');
 
     // 用本地配置覆盖（保留云端订单，只更新配置部分）
     // 安全检查：只有本地有数据时才覆盖，防止空本地数据清空云端配置
@@ -1637,7 +1642,7 @@ async function saveConfigToGitHub(silent){
     // 编码并上传
     if(statusEl) statusEl.textContent = '正在上传配置...';
     const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(existing, null, 2))));
-    const putResp = await fetchWithFallback(GH_API_BASE, {
+    let putResp = await fetchWithFallback(GH_API_BASE, {
       method: 'PUT',
       headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
       body: JSON.stringify({
@@ -1646,6 +1651,39 @@ async function saveConfigToGitHub(silent){
         sha: sha
       })
     });
+
+    // SHA 冲突（409）：重新读取最新 SHA 并重试一次
+    if(putResp.status === 409) {
+      console.warn('[saveConfig] SHA 冲突，重新读取后重试...');
+      if(statusEl) statusEl.textContent = '配置已更新，正在重试...';
+      const retryResp = await fetchWithFallback(GH_API_BASE, {
+        headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
+      });
+      if(retryResp.ok) {
+        const fileData = await retryResp.json();
+        sha = fileData.sha;
+        const latestExisting = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+        // 重新应用本地配置到最新版本
+        if(state.users && Object.keys(state.users).length > 0) latestExisting.users = state.users;
+        if(state.personnel && (state.personnel.channels?.length || state.personnel.zhaoshangs?.length)) latestExisting.personnel = state.personnel;
+        if(state.mapping && Object.keys(state.mapping).length > 0) latestExisting.mapping = state.mapping;
+        if(state.productMapping && Object.keys(state.productMapping).length > 0) latestExisting.productMapping = state.productMapping;
+        if(state.products && state.products.length > 0) latestExisting.products = state.products;
+        latestExisting._meta = latestExisting._meta || {};
+        latestExisting._meta.configUpdated = new Date().toISOString();
+        latestExisting._meta.configUpdatedBy = currentUser || 'unknown';
+        const retryContent = btoa(unescape(encodeURIComponent(JSON.stringify(latestExisting, null, 2))));
+        putResp = await fetchWithFallback(GH_API_BASE, {
+          method: 'PUT',
+          headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+          body: JSON.stringify({
+            message: 'Update config (retry): users/personnel/mapping (by ' + (currentUser || 'user') + ')',
+            content: retryContent,
+            sha: sha
+          })
+        });
+      }
+    }
 
     if(!putResp.ok) {
       let errMsg = '上传失败: ' + putResp.status;
@@ -1656,21 +1694,6 @@ async function saveConfigToGitHub(silent){
     statusEl.textContent = '✅ 已保存到云端，所有设备将能看到更新';
     statusEl.style.color = 'var(--success)';
     if(!silent) toast('配置已保存到云端！', 'success');
-
-    // 同时上传到 jsonblob（兼容旧逻辑）
-    try {
-      await fetch('https://jsonblob.com/api/jsonBlob/' + DEFAULT_ROOM_ID, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mapping: state.mapping || {},
-          users: state.users || {},
-          personnel: state.personnel || { channels: [], zhaoshangs: [] },
-          products: state.products || [],
-          productMapping: state.productMapping || {}
-        })
-      });
-    } catch(e) { /* jsonblob 失败不影响主流程 */ }
 
   } catch(e) {
     console.error('saveConfigToGitHub error:', e);
