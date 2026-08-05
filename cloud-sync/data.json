@@ -12831,7 +12831,7 @@
     },
     "广东阳妈": {
       "channel": "听旧雨",
-      "zhaoshang": "猪猪"
+      "zhaoshang": "枝枝"
     },
     "国货甄选工厂5号店": {
       "channel": "魏佳旭",
@@ -12880,35 +12880,90 @@
     "杨妹甄选百货": {
       "channel": "魏佳旭",
       "zhaoshang": ""
+    },
+    "楠楠好物优选1店": {
+      "channel": "猪猪",
+      "zhaoshang": ""
+    },
+    "鑫瑞福仓": {
+      "channel": "LLL",
+      "zhaoshang": "猪猪"
+    },
+    "渝姐来啦": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "月月的9852橱窗": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "沐彤居家优选": {
+      "channel": "听旧雨",
+      "zhaoshang": "枝枝"
+    },
+    "微微笑轻创": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "小梦精选3029": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
     }
   },
   "productMapping": {
     "鑫瑞福仓|10000237391702": {
-      "channel": "LLL",
       "zhaoshang": ""
     },
     "楠楠好物优选1店|10000237391702": {
-      "channel": "猪猪",
       "zhaoshang": "猪猪"
     },
     "楠楠好物优选1店|10000689052926": {
-      "channel": "猪猪",
       "zhaoshang": "小宇宙"
     },
     "听旧雨.2|10000083279642": {
+      "channel": "听旧雨",
       "zhaoshang": "枝枝"
     },
     "听旧雨.2|10000980039154": {
+      "channel": "听旧雨",
       "zhaoshang": "小宇宙"
     },
     "听旧雨.2|10000596738846": {
       "zhaoshang": "小宇宙"
     },
     "杨妹甄选百货|10000083279642": {
+      "channel": "魏佳旭",
       "zhaoshang": "枝枝"
     },
     "杨妹甄选百货|10000271156085": {
+      "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
+    },
+    "月月的9852橱窗|10000689052926": {
+      "channel": "",
+      "zhaoshang": ""
+    },
+    "居家烟火小铺子521|10000381332389": {
+      "channel": "",
+      "zhaoshang": ""
+    },
+    "悦悦好物分享13|10000714572971": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "悦悦好物分享13|10000233200678": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "悦悦好物分享13|10000856371572": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "山村阿刚|10000980039154": {
+      "zhaoshang": "小宇宙"
+    },
+    "山村阿刚|10000381332389": {
+      "zhaoshang": "大海"
     }
   },
   "personnel": {
@@ -12959,7 +13014,13 @@
         "name": "于东旭",
         "contact": "",
         "note": "",
-        "id": "msdgv5wsqci5x"
+        "id": "ms9rfu23mbjff"
+      },
+      {
+        "name": "zz",
+        "contact": "",
+        "note": "",
+        "id": "ms507kgdt8vsg"
       }
     ],
     "zhaoshangs": [
@@ -13039,6 +13100,10 @@
     "猪猪": {
       "password": "123456",
       "role": "viewer"
+    },
+    "zz": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
@@ -13052,6 +13117,8 @@
     "time": "2026-08-05T09:13:40.231Z",
     "count": 401,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-05T09:17:49.069Z",
+    "configUpdatedBy": "枝枝"
   }
 }
