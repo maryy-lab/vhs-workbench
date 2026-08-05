@@ -12964,6 +12964,10 @@
     },
     "山村阿刚|10000381332389": {
       "zhaoshang": "大海"
+    },
+    "新航程幸福臻选|10000314404960": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
     }
   },
   "personnel": {
@@ -13117,6 +13121,8 @@
     "time": "2026-08-05T10:05:37.789Z",
     "count": 401,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-05T10:08:51.503Z",
+    "configUpdatedBy": "枝枝"
   }
 }
