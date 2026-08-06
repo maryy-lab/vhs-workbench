@@ -13543,6 +13543,14 @@
     "楠楠好物优选1店|10000628274040": {
       "channel": "",
       "zhaoshang": "小宇宙"
+    },
+    "壹品家有机食品|10001252046969": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "壹品食品大陶|10000199594164": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
     }
   },
   "personnel": {
@@ -13697,7 +13705,7 @@
     "count": 418,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-06T09:00:35.145Z",
+    "configUpdated": "2026-08-06T09:07:14.450Z",
     "configUpdatedBy": "枝枝"
   }
 }
