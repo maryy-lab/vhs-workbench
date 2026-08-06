@@ -13551,6 +13551,10 @@
     "壹品食品大陶|10000199594164": {
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
+    },
+    "日用品工厂精选|10000965676990": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
     }
   },
   "personnel": {
@@ -13705,7 +13709,7 @@
     "count": 418,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-06T09:07:14.450Z",
+    "configUpdated": "2026-08-06T09:07:32.994Z",
     "configUpdatedBy": "枝枝"
   }
 }
