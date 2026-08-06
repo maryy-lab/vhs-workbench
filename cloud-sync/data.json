@@ -13539,6 +13539,10 @@
     "新航程幸福臻选|10000314404960": {
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
+    },
+    "楠楠好物优选1店|10000628274040": {
+      "channel": "",
+      "zhaoshang": "小宇宙"
     }
   },
   "personnel": {
@@ -13692,6 +13696,8 @@
     "time": "2026-08-06T08:59:41.603Z",
     "count": 418,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-06T09:00:35.145Z",
+    "configUpdatedBy": "枝枝"
   }
 }
