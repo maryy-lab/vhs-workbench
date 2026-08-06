@@ -1,6 +1,130 @@
 {
   "orders": [
     {
+      "id": "3738276119757095680_3513168418",
+      "orderId": "3738276119757095680",
+      "skuId": "3513168418",
+      "date": "2026-08-06",
+      "payTimeStr": "2026-08-06 15:38",
+      "talentName": "楠楠好物优选1店",
+      "talentType": "talent",
+      "talentId": "ofkS7UG3zJVV0a2rdgpEwC5eyt4JPFBpXHYwi1HIA7gnWKXeLXaFTvQzRQ30BWpeCT-N94p-TuHg",
+      "shopName": "雕瞿辉洗护清洁店",
+      "shopAppid": "wx5058197cbbde7b26",
+      "productTitle": "雕牌肥皂202g*4块透明皂洗衣皂家庭装强力去污宿舍用家用不开裂不伤手",
+      "productId": "10000237391702",
+      "productImg": "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload/SZ/reserved/6a5796c80007dc389038c83709885510000000a000004f50",
+      "productCount": 1,
+      "salesAmount": 15.8,
+      "serviceAmount": 0,
+      "serviceRatio": 0,
+      "serviceTotalAmount": 0,
+      "talentCommission": 1.58,
+      "talentCommissionRatio": 10,
+      "platformAmount": 0,
+      "promotionChannel": "橱窗带货",
+      "orderStatus": "",
+      "commissionStatus": "未结算",
+      "createTime": 1786001894,
+      "payTime": 1786001903,
+      "syncedAt": "2026-08-06T08:04:52.735Z",
+      "channel": "猪猪",
+      "zhaoshang": ""
+    },
+    {
+      "id": "3738275804929212416_10439313814",
+      "orderId": "3738275804929212416",
+      "skuId": "10439313814",
+      "date": "2026-08-06",
+      "payTimeStr": "2026-08-06 15:18",
+      "talentName": "楠楠好物优选1店",
+      "talentType": "talent",
+      "talentId": "ofkS7UG3zJVV0a2rdgpEwC5eyt4JPFBpXHYwi1HIA7gnWKXeLXaFTvQzRQ30BWpeCT-N94p-TuHg",
+      "shopName": "牡丹超市",
+      "shopAppid": "wx35ad5c591f1be2c9",
+      "productTitle": "6块84洗衣皂肥皂家用洗衣服清香皂去污渍净白男女内衣清洁皂家政宾馆",
+      "productId": "10000628274040",
+      "productImg": "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload/SH/reserved/69c287650006f622174d0ea1ec65b01e000000a100004f50",
+      "productCount": 1,
+      "salesAmount": 0,
+      "serviceAmount": 0,
+      "serviceRatio": 1,
+      "serviceTotalAmount": 0,
+      "talentCommission": 0,
+      "talentCommissionRatio": 36,
+      "platformAmount": 0,
+      "promotionChannel": "橱窗带货",
+      "orderStatus": "",
+      "commissionStatus": "取消结算",
+      "createTime": 1786000690,
+      "payTime": 1786000703,
+      "syncedAt": "2026-08-06T08:04:53.588Z",
+      "channel": "猪猪",
+      "zhaoshang": ""
+    },
+    {
+      "id": "3738275648058595840_3513168418",
+      "orderId": "3738275648058595840",
+      "skuId": "3513168418",
+      "date": "2026-08-06",
+      "payTimeStr": "2026-08-06 15:08",
+      "talentName": "楠楠好物优选1店",
+      "talentType": "talent",
+      "talentId": "ofkS7UG3zJVV0a2rdgpEwC5eyt4JPFBpXHYwi1HIA7gnWKXeLXaFTvQzRQ30BWpeCT-N94p-TuHg",
+      "shopName": "雕瞿辉洗护清洁店",
+      "shopAppid": "wx5058197cbbde7b26",
+      "productTitle": "雕牌肥皂202g*4块透明皂洗衣皂家庭装强力去污宿舍用家用不开裂不伤手",
+      "productId": "10000237391702",
+      "productImg": "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload/SZ/reserved/6a5796c80007dc389038c83709885510000000a000004f50",
+      "productCount": 1,
+      "salesAmount": 0,
+      "serviceAmount": 0,
+      "serviceRatio": 0,
+      "serviceTotalAmount": 0,
+      "talentCommission": 0,
+      "talentCommissionRatio": 10,
+      "platformAmount": 0,
+      "promotionChannel": "橱窗带货",
+      "orderStatus": "",
+      "commissionStatus": "取消结算",
+      "createTime": 1786000095,
+      "payTime": 1786000102,
+      "syncedAt": "2026-08-06T08:04:54.319Z",
+      "channel": "猪猪",
+      "zhaoshang": ""
+    },
+    {
+      "id": "3738274699298896384_6045558793",
+      "orderId": "3738274699298896384",
+      "skuId": "6045558793",
+      "date": "2026-08-06",
+      "payTimeStr": "2026-08-06 14:07",
+      "talentName": "平台精选1号店",
+      "talentType": "talent",
+      "talentId": "ofGtfSX9G0ozN3LFnAmqx4f5YENYbGFs76-8HazLp0qs32equu1S6iKqpm4xhOgA1xBgOG7-1bwA",
+      "shopName": "笛本垃圾袋工厂店",
+      "shopAppid": "wx72e369d8a8829767",
+      "productTitle": "新春马上有钱风大卷免撕抽绳式垃圾袋不破垃圾袋家用加厚款",
+      "productId": "10000364272478",
+      "productImg": "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload/SH/reserved/695b135d00099c4f19b218bbfc531b15000000a000004f50",
+      "productCount": 1,
+      "salesAmount": 3.99,
+      "serviceAmount": 0.23,
+      "serviceRatio": 6,
+      "serviceTotalAmount": 0.23,
+      "talentCommission": 0.47,
+      "talentCommissionRatio": 12,
+      "platformAmount": 0,
+      "promotionChannel": "橱窗带货",
+      "orderStatus": "",
+      "commissionStatus": "未结算",
+      "createTime": 1785996471,
+      "payTime": 1785996476,
+      "syncedAt": "2026-08-06T08:04:55.040Z",
+      "channel": "魏佳旭",
+      "zhaoshang": "大海"
+    },
+    {
       "id": "3738271921063741184_14781729923",
       "orderId": "3738271921063741184",
       "skuId": "14781729923",
@@ -27,7 +151,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785985873,
       "payTime": 1785985896,
-      "syncedAt": "2026-08-06T05:00:04.538Z",
+      "syncedAt": "2026-08-06T08:04:55.742Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -58,7 +182,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785985317,
       "payTime": 1785985324,
-      "syncedAt": "2026-08-06T05:00:05.195Z",
+      "syncedAt": "2026-08-06T08:04:56.445Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -89,7 +213,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785984607,
       "payTime": 1785984612,
-      "syncedAt": "2026-08-06T05:00:05.828Z",
+      "syncedAt": "2026-08-06T08:04:57.145Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -120,7 +244,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785975815,
       "payTime": 1785975826,
-      "syncedAt": "2026-08-06T05:00:06.433Z",
+      "syncedAt": "2026-08-06T08:04:57.845Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -151,7 +275,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785975145,
       "payTime": 1785975152,
-      "syncedAt": "2026-08-06T05:00:07.069Z",
+      "syncedAt": "2026-08-06T08:04:58.522Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -182,7 +306,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785960014,
       "payTime": 1785960025,
-      "syncedAt": "2026-08-06T05:00:07.739Z",
+      "syncedAt": "2026-08-06T08:04:59.283Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -213,7 +337,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785941228,
       "payTime": 1785941239,
-      "syncedAt": "2026-08-06T05:00:08.375Z",
+      "syncedAt": "2026-08-06T08:05:00.004Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -244,7 +368,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785938607,
       "payTime": 1785938613,
-      "syncedAt": "2026-08-06T05:00:09.229Z",
+      "syncedAt": "2026-08-06T08:05:00.704Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -275,7 +399,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785918493,
       "payTime": 1785918502,
-      "syncedAt": "2026-08-06T05:00:09.901Z",
+      "syncedAt": "2026-08-06T08:05:01.390Z",
       "channel": "魏佳旭",
       "zhaoshang": "大海"
     },
@@ -306,7 +430,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785916293,
       "payTime": 1785916299,
-      "syncedAt": "2026-08-06T05:00:10.528Z",
+      "syncedAt": "2026-08-06T08:05:02.091Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -337,7 +461,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785915299,
       "payTime": 1785915306,
-      "syncedAt": "2026-08-06T05:00:11.188Z",
+      "syncedAt": "2026-08-06T08:05:02.822Z",
       "channel": "魏佳旭",
       "zhaoshang": ""
     },
@@ -368,7 +492,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785913918,
       "payTime": 1785913928,
-      "syncedAt": "2026-08-06T05:00:11.774Z",
+      "syncedAt": "2026-08-06T08:05:03.508Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -387,19 +511,19 @@
       "productId": "10000839669885",
       "productImg": "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload/SZ/reserved/6a59d73f000820a111f44c3e66715415000000a000004f50",
       "productCount": 1,
-      "salesAmount": 4.2,
-      "serviceAmount": 0.04,
+      "salesAmount": 0,
+      "serviceAmount": 0,
       "serviceRatio": 1,
-      "serviceTotalAmount": 0.04,
-      "talentCommission": 0.37,
+      "serviceTotalAmount": 0,
+      "talentCommission": 0,
       "talentCommissionRatio": 9,
       "platformAmount": 0,
       "promotionChannel": "橱窗带货",
       "orderStatus": "",
-      "commissionStatus": "未结算",
+      "commissionStatus": "取消结算",
       "createTime": 1785912537,
       "payTime": 1785912556,
-      "syncedAt": "2026-08-06T05:00:12.423Z",
+      "syncedAt": "2026-08-06T08:05:04.234Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -430,7 +554,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785912414,
       "payTime": 1785912436,
-      "syncedAt": "2026-08-06T05:00:13.064Z",
+      "syncedAt": "2026-08-06T08:05:04.972Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -461,7 +585,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785910060,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:13.736Z",
+      "syncedAt": "2026-08-06T08:05:05.699Z",
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
     },
@@ -492,7 +616,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785823723,
       "payTime": 1785823734,
-      "syncedAt": "2026-08-06T05:00:14.361Z",
+      "syncedAt": "2026-08-06T08:05:06.382Z",
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
     },
@@ -523,7 +647,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785823582,
       "payTime": 1785823624,
-      "syncedAt": "2026-08-06T05:00:14.965Z",
+      "syncedAt": "2026-08-06T08:05:07.008Z",
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
     },
@@ -554,7 +678,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785823579,
       "payTime": 1785823589,
-      "syncedAt": "2026-08-06T05:00:15.643Z",
+      "syncedAt": "2026-08-06T08:05:07.759Z",
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
     },
@@ -585,7 +709,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785823568,
       "payTime": 1785823579,
-      "syncedAt": "2026-08-06T05:00:16.266Z",
+      "syncedAt": "2026-08-06T08:05:08.441Z",
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
     },
@@ -616,7 +740,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785823561,
       "payTime": 1785823571,
-      "syncedAt": "2026-08-06T05:00:16.877Z",
+      "syncedAt": "2026-08-06T08:05:09.142Z",
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
     },
@@ -647,7 +771,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785808987,
       "payTime": 1785808993,
-      "syncedAt": "2026-08-06T05:00:17.506Z",
+      "syncedAt": "2026-08-06T08:05:09.873Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -678,7 +802,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785807255,
       "payTime": 1785807262,
-      "syncedAt": "2026-08-06T05:00:18.124Z",
+      "syncedAt": "2026-08-06T08:05:10.535Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -709,7 +833,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785807126,
       "payTime": 1785807216,
-      "syncedAt": "2026-08-06T05:00:18.769Z",
+      "syncedAt": "2026-08-06T08:05:11.252Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -740,7 +864,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785765740,
       "payTime": 1785765748,
-      "syncedAt": "2026-08-06T05:00:19.371Z",
+      "syncedAt": "2026-08-06T08:05:11.952Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -771,7 +895,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785753050,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:20.003Z",
+      "syncedAt": "2026-08-06T08:05:12.623Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -802,7 +926,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785752904,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:20.588Z",
+      "syncedAt": "2026-08-06T08:05:13.305Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -833,7 +957,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785751003,
       "payTime": 1785751008,
-      "syncedAt": "2026-08-06T05:00:21.227Z",
+      "syncedAt": "2026-08-06T08:05:14.038Z",
       "channel": "听旧雨",
       "zhaoshang": ""
     },
@@ -864,7 +988,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785749567,
       "payTime": 1785749575,
-      "syncedAt": "2026-08-06T05:00:21.833Z",
+      "syncedAt": "2026-08-06T08:05:14.724Z",
       "channel": "魏佳旭",
       "zhaoshang": ""
     },
@@ -895,7 +1019,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785749135,
       "payTime": 1785749142,
-      "syncedAt": "2026-08-06T05:00:22.474Z",
+      "syncedAt": "2026-08-06T08:05:15.424Z",
       "channel": "魏佳旭",
       "zhaoshang": ""
     },
@@ -926,7 +1050,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785749012,
       "payTime": 1785749021,
-      "syncedAt": "2026-08-06T05:00:23.100Z",
+      "syncedAt": "2026-08-06T08:05:16.142Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -957,7 +1081,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785743662,
       "payTime": 1785743680,
-      "syncedAt": "2026-08-06T05:00:23.689Z",
+      "syncedAt": "2026-08-06T08:05:16.823Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -988,7 +1112,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785743636,
       "payTime": 1785743644,
-      "syncedAt": "2026-08-06T05:00:24.305Z",
+      "syncedAt": "2026-08-06T08:05:17.536Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1019,7 +1143,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785742327,
       "payTime": 1785742334,
-      "syncedAt": "2026-08-06T05:00:24.902Z",
+      "syncedAt": "2026-08-06T08:05:18.209Z",
       "channel": "听旧雨",
       "zhaoshang": "小宇宙"
     },
@@ -1050,7 +1174,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785741837,
       "payTime": 1785741847,
-      "syncedAt": "2026-08-06T05:00:25.535Z",
+      "syncedAt": "2026-08-06T08:05:18.914Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1081,7 +1205,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785740887,
       "payTime": 1785740895,
-      "syncedAt": "2026-08-06T05:00:26.145Z",
+      "syncedAt": "2026-08-06T08:05:19.842Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1112,7 +1236,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785740884,
       "payTime": 1785740900,
-      "syncedAt": "2026-08-06T05:00:26.740Z",
+      "syncedAt": "2026-08-06T08:05:20.538Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1143,7 +1267,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785740836,
       "payTime": 1785740846,
-      "syncedAt": "2026-08-06T05:00:27.349Z",
+      "syncedAt": "2026-08-06T08:05:21.213Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1174,7 +1298,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785683031,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:27.983Z",
+      "syncedAt": "2026-08-06T08:05:21.910Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1205,7 +1329,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785683018,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:28.567Z",
+      "syncedAt": "2026-08-06T08:05:22.568Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1236,7 +1360,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785682995,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:29.167Z",
+      "syncedAt": "2026-08-06T08:05:23.234Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1267,7 +1391,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785682688,
       "payTime": 1785682702,
-      "syncedAt": "2026-08-06T05:00:29.753Z",
+      "syncedAt": "2026-08-06T08:05:23.933Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1298,7 +1422,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785682565,
       "payTime": 1785682576,
-      "syncedAt": "2026-08-06T05:00:30.389Z",
+      "syncedAt": "2026-08-06T08:05:24.601Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1329,7 +1453,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785681726,
       "payTime": 1785681734,
-      "syncedAt": "2026-08-06T05:00:31.029Z",
+      "syncedAt": "2026-08-06T08:05:25.319Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1360,7 +1484,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785681224,
       "payTime": 1785681242,
-      "syncedAt": "2026-08-06T05:00:31.612Z",
+      "syncedAt": "2026-08-06T08:05:25.996Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1391,7 +1515,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785680350,
       "payTime": 1785680355,
-      "syncedAt": "2026-08-06T05:00:32.254Z",
+      "syncedAt": "2026-08-06T08:05:26.634Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1422,7 +1546,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785679878,
       "payTime": 1785679893,
-      "syncedAt": "2026-08-06T05:00:32.834Z",
+      "syncedAt": "2026-08-06T08:05:27.248Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1453,7 +1577,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785679834,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:33.471Z",
+      "syncedAt": "2026-08-06T08:05:27.906Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1484,7 +1608,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785679769,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:34.073Z",
+      "syncedAt": "2026-08-06T08:05:28.552Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1515,7 +1639,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785679760,
       "payTime": 1785679773,
-      "syncedAt": "2026-08-06T05:00:34.683Z",
+      "syncedAt": "2026-08-06T08:05:29.235Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1546,7 +1670,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785679502,
       "payTime": 1785679508,
-      "syncedAt": "2026-08-06T05:00:35.244Z",
+      "syncedAt": "2026-08-06T08:05:29.918Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1577,7 +1701,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785679463,
       "payTime": 1785679471,
-      "syncedAt": "2026-08-06T05:00:35.817Z",
+      "syncedAt": "2026-08-06T08:05:30.599Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1608,7 +1732,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785676597,
       "payTime": 1785676617,
-      "syncedAt": "2026-08-06T05:00:36.419Z",
+      "syncedAt": "2026-08-06T08:05:31.280Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1639,7 +1763,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785676502,
       "payTime": 1785676510,
-      "syncedAt": "2026-08-06T05:00:37.027Z",
+      "syncedAt": "2026-08-06T08:05:31.966Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1670,7 +1794,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785671637,
       "payTime": 1785671653,
-      "syncedAt": "2026-08-06T05:00:37.656Z",
+      "syncedAt": "2026-08-06T08:05:32.646Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1701,7 +1825,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785654865,
       "payTime": 1785654876,
-      "syncedAt": "2026-08-06T05:00:38.331Z",
+      "syncedAt": "2026-08-06T08:05:33.363Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1732,7 +1856,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785643974,
       "payTime": 1785643985,
-      "syncedAt": "2026-08-06T05:00:38.941Z",
+      "syncedAt": "2026-08-06T08:05:34.013Z",
       "channel": "听旧雨",
       "zhaoshang": "枝枝"
     },
@@ -1763,7 +1887,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785641610,
       "payTime": 1785641876,
-      "syncedAt": "2026-08-06T05:00:39.565Z",
+      "syncedAt": "2026-08-06T08:05:34.720Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1794,7 +1918,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785627213,
       "payTime": 1785627220,
-      "syncedAt": "2026-08-06T05:00:40.197Z",
+      "syncedAt": "2026-08-06T08:05:35.413Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1825,7 +1949,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785597741,
       "payTime": 1785597748,
-      "syncedAt": "2026-08-06T05:00:40.770Z",
+      "syncedAt": "2026-08-06T08:05:36.109Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -1856,7 +1980,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785594863,
       "payTime": 1785594874,
-      "syncedAt": "2026-08-06T05:00:41.388Z",
+      "syncedAt": "2026-08-06T08:05:36.744Z",
       "channel": "听旧雨",
       "zhaoshang": "枝枝"
     },
@@ -1887,7 +2011,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785594812,
       "payTime": 1785594823,
-      "syncedAt": "2026-08-06T05:00:41.980Z",
+      "syncedAt": "2026-08-06T08:05:37.402Z",
       "channel": "听旧雨",
       "zhaoshang": "枝枝"
     },
@@ -1918,7 +2042,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785589304,
       "payTime": 1785589316,
-      "syncedAt": "2026-08-06T05:00:42.670Z",
+      "syncedAt": "2026-08-06T08:05:38.094Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1949,7 +2073,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785585753,
       "payTime": 1785585765,
-      "syncedAt": "2026-08-06T05:00:43.265Z",
+      "syncedAt": "2026-08-06T08:05:38.804Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -1980,7 +2104,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785584659,
       "payTime": 1785584673,
-      "syncedAt": "2026-08-06T05:00:43.806Z",
+      "syncedAt": "2026-08-06T08:05:39.500Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2011,7 +2135,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785584610,
       "payTime": 1785584619,
-      "syncedAt": "2026-08-06T05:00:44.400Z",
+      "syncedAt": "2026-08-06T08:05:40.152Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2042,7 +2166,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785584513,
       "payTime": 1785584536,
-      "syncedAt": "2026-08-06T05:00:44.975Z",
+      "syncedAt": "2026-08-06T08:05:40.837Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2073,7 +2197,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785575982,
       "payTime": 1785575988,
-      "syncedAt": "2026-08-06T05:00:45.614Z",
+      "syncedAt": "2026-08-06T08:05:41.558Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -2104,7 +2228,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785574674,
       "payTime": 1785574682,
-      "syncedAt": "2026-08-06T05:00:46.193Z",
+      "syncedAt": "2026-08-06T08:05:42.227Z",
       "channel": "魏佳旭",
       "zhaoshang": ""
     },
@@ -2135,7 +2259,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785574638,
       "payTime": 1785574644,
-      "syncedAt": "2026-08-06T05:00:46.820Z",
+      "syncedAt": "2026-08-06T08:05:42.886Z",
       "channel": "魏佳旭",
       "zhaoshang": ""
     },
@@ -2166,7 +2290,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785574619,
       "payTime": 1785574625,
-      "syncedAt": "2026-08-06T05:00:47.375Z",
+      "syncedAt": "2026-08-06T08:05:43.523Z",
       "channel": "魏佳旭",
       "zhaoshang": ""
     },
@@ -2197,7 +2321,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785566434,
       "payTime": 1785566440,
-      "syncedAt": "2026-08-06T05:00:47.979Z",
+      "syncedAt": "2026-08-06T08:05:44.229Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -2228,7 +2352,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785566346,
       "payTime": 1785566354,
-      "syncedAt": "2026-08-06T05:00:48.549Z",
+      "syncedAt": "2026-08-06T08:05:44.932Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -2259,7 +2383,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785565243,
       "payTime": 1785565261,
-      "syncedAt": "2026-08-06T05:00:49.127Z",
+      "syncedAt": "2026-08-06T08:05:45.647Z",
       "channel": "听旧雨",
       "zhaoshang": "枝枝"
     },
@@ -2290,7 +2414,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785549796,
       "payTime": 1785549807,
-      "syncedAt": "2026-08-06T05:00:49.734Z",
+      "syncedAt": "2026-08-06T08:05:46.304Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -2321,7 +2445,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785546319,
       "payTime": 1785546329,
-      "syncedAt": "2026-08-06T05:00:50.341Z",
+      "syncedAt": "2026-08-06T08:05:46.980Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -2352,7 +2476,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785546108,
       "payTime": 1785546120,
-      "syncedAt": "2026-08-06T05:00:50.939Z",
+      "syncedAt": "2026-08-06T08:05:47.666Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -2383,7 +2507,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785535723,
       "payTime": 1785535732,
-      "syncedAt": "2026-08-06T05:00:51.577Z",
+      "syncedAt": "2026-08-06T08:05:48.359Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -2414,7 +2538,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785510122,
       "payTime": 1785510129,
-      "syncedAt": "2026-08-06T05:00:52.167Z",
+      "syncedAt": "2026-08-06T08:05:49.024Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2445,7 +2569,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785509399,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:52.782Z",
+      "syncedAt": "2026-08-06T08:05:49.706Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2476,7 +2600,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785509388,
       "payTime": 1785509397,
-      "syncedAt": "2026-08-06T05:00:53.363Z",
+      "syncedAt": "2026-08-06T08:05:50.410Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2507,7 +2631,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785509258,
       "payTime": 1785509273,
-      "syncedAt": "2026-08-06T05:00:53.974Z",
+      "syncedAt": "2026-08-06T08:05:51.074Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2538,7 +2662,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785509215,
       "payTime": 1785509225,
-      "syncedAt": "2026-08-06T05:00:54.553Z",
+      "syncedAt": "2026-08-06T08:05:51.747Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2569,7 +2693,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785508212,
       "payTime": 1785508224,
-      "syncedAt": "2026-08-06T05:00:55.155Z",
+      "syncedAt": "2026-08-06T08:05:52.421Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2600,7 +2724,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785507998,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:55.754Z",
+      "syncedAt": "2026-08-06T08:05:53.074Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2631,7 +2755,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785507045,
       "payTime": 1785507052,
-      "syncedAt": "2026-08-06T05:00:56.325Z",
+      "syncedAt": "2026-08-06T08:05:53.762Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2662,7 +2786,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785506788,
       "payTime": 1785506797,
-      "syncedAt": "2026-08-06T05:00:56.948Z",
+      "syncedAt": "2026-08-06T08:05:54.434Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2693,7 +2817,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785506745,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:57.562Z",
+      "syncedAt": "2026-08-06T08:05:55.133Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2724,7 +2848,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785506303,
       "payTime": 1785506398,
-      "syncedAt": "2026-08-06T05:00:58.142Z",
+      "syncedAt": "2026-08-06T08:05:55.832Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2755,7 +2879,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785506151,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:58.727Z",
+      "syncedAt": "2026-08-06T08:05:56.526Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2786,7 +2910,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785506096,
       "payTime": 1785506307,
-      "syncedAt": "2026-08-06T05:00:59.349Z",
+      "syncedAt": "2026-08-06T08:05:57.215Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2817,7 +2941,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785504995,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:00:59.890Z",
+      "syncedAt": "2026-08-06T08:05:57.894Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2848,7 +2972,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785504191,
       "payTime": 1785504204,
-      "syncedAt": "2026-08-06T05:01:00.509Z",
+      "syncedAt": "2026-08-06T08:05:58.495Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2879,7 +3003,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785503954,
       "payTime": 1785503960,
-      "syncedAt": "2026-08-06T05:01:01.094Z",
+      "syncedAt": "2026-08-06T08:05:59.148Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2910,7 +3034,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785503935,
       "payTime": 1785503943,
-      "syncedAt": "2026-08-06T05:01:01.679Z",
+      "syncedAt": "2026-08-06T08:06:00.058Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2941,7 +3065,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785503839,
       "payTime": 1785503849,
-      "syncedAt": "2026-08-06T05:01:02.293Z",
+      "syncedAt": "2026-08-06T08:06:00.738Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -2972,7 +3096,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785503809,
       "payTime": 1785503817,
-      "syncedAt": "2026-08-06T05:01:02.893Z",
+      "syncedAt": "2026-08-06T08:06:01.435Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3003,7 +3127,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785503615,
       "payTime": 1785503623,
-      "syncedAt": "2026-08-06T05:01:03.468Z",
+      "syncedAt": "2026-08-06T08:06:02.106Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3034,7 +3158,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785503489,
       "payTime": 1785503496,
-      "syncedAt": "2026-08-06T05:01:04.053Z",
+      "syncedAt": "2026-08-06T08:06:02.837Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3065,7 +3189,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785489716,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:04.687Z",
+      "syncedAt": "2026-08-06T08:06:03.496Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -3096,7 +3220,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785489298,
       "payTime": 1785489303,
-      "syncedAt": "2026-08-06T05:01:05.389Z",
+      "syncedAt": "2026-08-06T08:06:04.228Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -3127,7 +3251,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785486223,
       "payTime": 1785486228,
-      "syncedAt": "2026-08-06T05:01:06.041Z",
+      "syncedAt": "2026-08-06T08:06:04.943Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -3158,7 +3282,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785485757,
       "payTime": 1785485762,
-      "syncedAt": "2026-08-06T05:01:06.672Z",
+      "syncedAt": "2026-08-06T08:06:05.594Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -3189,7 +3313,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785482959,
       "payTime": 1785482967,
-      "syncedAt": "2026-08-06T05:01:07.250Z",
+      "syncedAt": "2026-08-06T08:06:06.205Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3220,7 +3344,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785482872,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:07.868Z",
+      "syncedAt": "2026-08-06T08:06:06.865Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3251,7 +3375,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785482693,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:08.481Z",
+      "syncedAt": "2026-08-06T08:06:07.491Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3282,7 +3406,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785482615,
       "payTime": 1785482624,
-      "syncedAt": "2026-08-06T05:01:09.092Z",
+      "syncedAt": "2026-08-06T08:06:08.123Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3313,7 +3437,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785482583,
       "payTime": 1785482591,
-      "syncedAt": "2026-08-06T05:01:09.710Z",
+      "syncedAt": "2026-08-06T08:06:08.833Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3344,7 +3468,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785480308,
       "payTime": 1785480339,
-      "syncedAt": "2026-08-06T05:01:10.311Z",
+      "syncedAt": "2026-08-06T08:06:09.497Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3375,7 +3499,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785479727,
       "payTime": 1785479741,
-      "syncedAt": "2026-08-06T05:01:10.941Z",
+      "syncedAt": "2026-08-06T08:06:10.157Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3406,7 +3530,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785479379,
       "payTime": 1785479385,
-      "syncedAt": "2026-08-06T05:01:11.503Z",
+      "syncedAt": "2026-08-06T08:06:10.795Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3437,7 +3561,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785477660,
       "payTime": 1785477670,
-      "syncedAt": "2026-08-06T05:01:12.071Z",
+      "syncedAt": "2026-08-06T08:06:11.454Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3468,7 +3592,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785476680,
       "payTime": 1785476686,
-      "syncedAt": "2026-08-06T05:01:12.710Z",
+      "syncedAt": "2026-08-06T08:06:12.164Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3499,7 +3623,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785476568,
       "payTime": 1785476575,
-      "syncedAt": "2026-08-06T05:01:13.320Z",
+      "syncedAt": "2026-08-06T08:06:12.817Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3530,7 +3654,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785476446,
       "payTime": 1785476457,
-      "syncedAt": "2026-08-06T05:01:13.912Z",
+      "syncedAt": "2026-08-06T08:06:13.522Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3561,7 +3685,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785476290,
       "payTime": 1785476298,
-      "syncedAt": "2026-08-06T05:01:14.634Z",
+      "syncedAt": "2026-08-06T08:06:14.215Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -3592,7 +3716,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785476148,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:15.292Z",
+      "syncedAt": "2026-08-06T08:06:14.886Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -3611,11 +3735,11 @@
       "productId": "10001216846290",
       "productImg": "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload/SZ/reserved/6a69812b000bdb6e51ba969f098860d9000000a000004f50",
       "productCount": 2,
-      "salesAmount": 39.98,
-      "serviceAmount": 0.39,
+      "salesAmount": 20.08,
+      "serviceAmount": 0.2,
       "serviceRatio": 1,
-      "serviceTotalAmount": 0.39,
-      "talentCommission": 5.99,
+      "serviceTotalAmount": 0.2,
+      "talentCommission": 3.01,
       "talentCommissionRatio": 15,
       "platformAmount": 0,
       "promotionChannel": "橱窗带货",
@@ -3623,7 +3747,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785467406,
       "payTime": 1785467417,
-      "syncedAt": "2026-08-06T05:01:15.993Z",
+      "syncedAt": "2026-08-06T08:06:15.612Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -3654,7 +3778,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785464733,
       "payTime": 1785464739,
-      "syncedAt": "2026-08-06T05:01:16.599Z",
+      "syncedAt": "2026-08-06T08:06:16.302Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -3685,7 +3809,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785464362,
       "payTime": 1785464368,
-      "syncedAt": "2026-08-06T05:01:17.163Z",
+      "syncedAt": "2026-08-06T08:06:16.970Z",
       "channel": "听旧雨",
       "zhaoshang": "枝枝"
     },
@@ -3716,7 +3840,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785464324,
       "payTime": 1785464330,
-      "syncedAt": "2026-08-06T05:01:17.759Z",
+      "syncedAt": "2026-08-06T08:06:17.669Z",
       "channel": "听旧雨",
       "zhaoshang": "枝枝"
     },
@@ -3747,7 +3871,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785461747,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:18.412Z",
+      "syncedAt": "2026-08-06T08:06:18.364Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -3778,7 +3902,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785460753,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:19.010Z",
+      "syncedAt": "2026-08-06T08:06:19.077Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -3809,7 +3933,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785452075,
       "payTime": 1785452083,
-      "syncedAt": "2026-08-06T05:01:19.673Z",
+      "syncedAt": "2026-08-06T08:06:19.739Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -3840,7 +3964,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785415392,
       "payTime": 1785415399,
-      "syncedAt": "2026-08-06T05:01:20.289Z",
+      "syncedAt": "2026-08-06T08:06:20.425Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -3871,7 +3995,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785415345,
       "payTime": 1785415351,
-      "syncedAt": "2026-08-06T05:01:20.856Z",
+      "syncedAt": "2026-08-06T08:06:21.116Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -3890,19 +4014,19 @@
       "productId": "10000150773977",
       "productImg": "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload/SZ/reserved/66e109c40007ebb02d853e4058498809000000a000004f50",
       "productCount": 1,
-      "salesAmount": 19.9,
-      "serviceAmount": 0.39,
+      "salesAmount": 0,
+      "serviceAmount": 0,
       "serviceRatio": 2,
-      "serviceTotalAmount": 0.39,
-      "talentCommission": 6.56,
+      "serviceTotalAmount": 0,
+      "talentCommission": 0,
       "talentCommissionRatio": 33,
       "platformAmount": 0,
       "promotionChannel": "橱窗带货",
       "orderStatus": "",
-      "commissionStatus": "未结算",
+      "commissionStatus": "取消结算",
       "createTime": 1785411793,
       "payTime": 1785411801,
-      "syncedAt": "2026-08-06T05:01:21.455Z",
+      "syncedAt": "2026-08-06T08:06:21.825Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -3933,7 +4057,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785408046,
       "payTime": 1785408052,
-      "syncedAt": "2026-08-06T05:01:22.040Z",
+      "syncedAt": "2026-08-06T08:06:22.550Z",
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
     },
@@ -3964,7 +4088,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785402850,
       "payTime": 1785402855,
-      "syncedAt": "2026-08-06T05:01:22.623Z",
+      "syncedAt": "2026-08-06T08:06:23.245Z",
       "channel": "LLL",
       "zhaoshang": "大海"
     },
@@ -3995,7 +4119,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785393137,
       "payTime": 1785393142,
-      "syncedAt": "2026-08-06T05:01:23.239Z",
+      "syncedAt": "2026-08-06T08:06:23.940Z",
       "channel": "魏佳旭",
       "zhaoshang": "大海"
     },
@@ -4026,7 +4150,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785392405,
       "payTime": 1785392414,
-      "syncedAt": "2026-08-06T05:01:23.888Z",
+      "syncedAt": "2026-08-06T08:06:24.639Z",
       "channel": "魏佳旭",
       "zhaoshang": "大海"
     },
@@ -4057,7 +4181,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785391177,
       "payTime": 1785391187,
-      "syncedAt": "2026-08-06T05:01:24.517Z",
+      "syncedAt": "2026-08-06T08:06:25.312Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -4088,7 +4212,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785388483,
       "payTime": 1785388491,
-      "syncedAt": "2026-08-06T05:01:25.134Z",
+      "syncedAt": "2026-08-06T08:06:26.073Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -4119,7 +4243,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785385790,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:25.724Z",
+      "syncedAt": "2026-08-06T08:06:26.751Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -4150,7 +4274,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785384521,
       "payTime": 1785384529,
-      "syncedAt": "2026-08-06T05:01:31.985Z",
+      "syncedAt": "2026-08-06T08:06:27.417Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -4181,7 +4305,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785384465,
       "payTime": 1785384493,
-      "syncedAt": "2026-08-06T05:01:32.576Z",
+      "syncedAt": "2026-08-06T08:06:28.062Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -4212,7 +4336,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785377299,
       "payTime": 1785377305,
-      "syncedAt": "2026-08-06T05:01:33.202Z",
+      "syncedAt": "2026-08-06T08:06:28.774Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -4243,7 +4367,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785365236,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:33.862Z",
+      "syncedAt": "2026-08-06T08:06:29.405Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -4274,7 +4398,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785317181,
       "payTime": 1785317186,
-      "syncedAt": "2026-08-06T05:01:34.508Z",
+      "syncedAt": "2026-08-06T08:06:30.150Z",
       "channel": "听旧雨",
       "zhaoshang": ""
     },
@@ -4305,7 +4429,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785316779,
       "payTime": 1785316786,
-      "syncedAt": "2026-08-06T05:01:35.121Z",
+      "syncedAt": "2026-08-06T08:06:30.831Z",
       "channel": "听旧雨",
       "zhaoshang": ""
     },
@@ -4336,7 +4460,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785316747,
       "payTime": 1785316753,
-      "syncedAt": "2026-08-06T05:01:35.707Z",
+      "syncedAt": "2026-08-06T08:06:31.462Z",
       "channel": "听旧雨",
       "zhaoshang": ""
     },
@@ -4367,7 +4491,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785315929,
       "payTime": 1785315953,
-      "syncedAt": "2026-08-06T05:01:36.351Z",
+      "syncedAt": "2026-08-06T08:06:32.165Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4398,7 +4522,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785315172,
       "payTime": 1785315247,
-      "syncedAt": "2026-08-06T05:01:36.921Z",
+      "syncedAt": "2026-08-06T08:06:32.865Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4429,7 +4553,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785314997,
       "payTime": 1785315008,
-      "syncedAt": "2026-08-06T05:01:37.551Z",
+      "syncedAt": "2026-08-06T08:06:33.557Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4460,7 +4584,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785314971,
       "payTime": 1785314978,
-      "syncedAt": "2026-08-06T05:01:38.192Z",
+      "syncedAt": "2026-08-06T08:06:34.225Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4491,7 +4615,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785314803,
       "payTime": 1785314816,
-      "syncedAt": "2026-08-06T05:01:38.839Z",
+      "syncedAt": "2026-08-06T08:06:34.915Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4522,7 +4646,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785314763,
       "payTime": 1785314773,
-      "syncedAt": "2026-08-06T05:01:39.438Z",
+      "syncedAt": "2026-08-06T08:06:35.608Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4553,7 +4677,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785314761,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:40.102Z",
+      "syncedAt": "2026-08-06T08:06:36.332Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4584,7 +4708,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785313799,
       "payTime": 1785313811,
-      "syncedAt": "2026-08-06T05:01:40.730Z",
+      "syncedAt": "2026-08-06T08:06:37.045Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4615,7 +4739,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785312766,
       "payTime": 1785312776,
-      "syncedAt": "2026-08-06T05:01:41.378Z",
+      "syncedAt": "2026-08-06T08:06:37.697Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4646,7 +4770,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785312575,
       "payTime": 1785312581,
-      "syncedAt": "2026-08-06T05:01:42.021Z",
+      "syncedAt": "2026-08-06T08:06:38.403Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4677,7 +4801,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785311813,
       "payTime": 1785311827,
-      "syncedAt": "2026-08-06T05:01:42.627Z",
+      "syncedAt": "2026-08-06T08:06:39.111Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4708,7 +4832,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785307878,
       "payTime": 1785307884,
-      "syncedAt": "2026-08-06T05:01:43.257Z",
+      "syncedAt": "2026-08-06T08:06:39.846Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -4739,7 +4863,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785307843,
       "payTime": 1785307851,
-      "syncedAt": "2026-08-06T05:01:43.903Z",
+      "syncedAt": "2026-08-06T08:06:40.516Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -4770,7 +4894,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785307821,
       "payTime": 1785307827,
-      "syncedAt": "2026-08-06T05:01:44.505Z",
+      "syncedAt": "2026-08-06T08:06:41.206Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -4801,7 +4925,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785305851,
       "payTime": 1785305860,
-      "syncedAt": "2026-08-06T05:01:45.124Z",
+      "syncedAt": "2026-08-06T08:06:41.899Z",
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -4832,7 +4956,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785288975,
       "payTime": 1785288979,
-      "syncedAt": "2026-08-06T05:01:45.865Z",
+      "syncedAt": "2026-08-06T08:06:42.652Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -4863,7 +4987,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785288447,
       "payTime": 1785288455,
-      "syncedAt": "2026-08-06T05:01:46.481Z",
+      "syncedAt": "2026-08-06T08:06:43.312Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4894,7 +5018,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785288380,
       "payTime": 1785288399,
-      "syncedAt": "2026-08-06T05:01:47.068Z",
+      "syncedAt": "2026-08-06T08:06:44.007Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4925,7 +5049,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785230769,
       "payTime": 1785230777,
-      "syncedAt": "2026-08-06T05:01:47.638Z",
+      "syncedAt": "2026-08-06T08:06:44.707Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4956,7 +5080,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785229763,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:48.227Z",
+      "syncedAt": "2026-08-06T08:06:45.346Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -4987,7 +5111,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785229608,
       "payTime": 1785229616,
-      "syncedAt": "2026-08-06T05:01:48.812Z",
+      "syncedAt": "2026-08-06T08:06:46.029Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -5018,7 +5142,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785229531,
       "payTime": 1785229728,
-      "syncedAt": "2026-08-06T05:01:49.415Z",
+      "syncedAt": "2026-08-06T08:06:46.718Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -5049,7 +5173,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785228949,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:49.998Z",
+      "syncedAt": "2026-08-06T08:06:47.355Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -5080,7 +5204,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785228941,
       "payTime": 1785228960,
-      "syncedAt": "2026-08-06T05:01:50.578Z",
+      "syncedAt": "2026-08-06T08:06:48.012Z",
       "channel": "LLL",
       "zhaoshang": "猪猪"
     },
@@ -5111,7 +5235,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785220644,
       "payTime": 1785220650,
-      "syncedAt": "2026-08-06T05:01:51.198Z",
+      "syncedAt": "2026-08-06T08:06:48.753Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -5142,7 +5266,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785208179,
       "payTime": 1785208187,
-      "syncedAt": "2026-08-06T05:01:51.858Z",
+      "syncedAt": "2026-08-06T08:06:49.545Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -5173,7 +5297,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785207578,
       "payTime": 1785207587,
-      "syncedAt": "2026-08-06T05:01:52.494Z",
+      "syncedAt": "2026-08-06T08:06:50.226Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -5204,7 +5328,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785205874,
       "payTime": 1785205879,
-      "syncedAt": "2026-08-06T05:01:53.120Z",
+      "syncedAt": "2026-08-06T08:06:50.898Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -5235,7 +5359,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785205345,
       "payTime": 1785205350,
-      "syncedAt": "2026-08-06T05:01:53.725Z",
+      "syncedAt": "2026-08-06T08:06:51.610Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -5266,7 +5390,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785205316,
       "payTime": 1785205322,
-      "syncedAt": "2026-08-06T05:01:54.341Z",
+      "syncedAt": "2026-08-06T08:06:52.297Z",
       "channel": "魏佳旭",
       "zhaoshang": "小宇宙"
     },
@@ -5297,7 +5421,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785204572,
       "payTime": 1785204582,
-      "syncedAt": "2026-08-06T05:01:54.921Z",
+      "syncedAt": "2026-08-06T08:06:52.974Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -5328,7 +5452,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785204209,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:55.538Z",
+      "syncedAt": "2026-08-06T08:06:53.670Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -5359,7 +5483,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785202487,
       "payTime": 0,
-      "syncedAt": "2026-08-06T05:01:56.172Z",
+      "syncedAt": "2026-08-06T08:06:54.377Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -5390,7 +5514,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785186478,
       "payTime": 1785186487,
-      "syncedAt": "2026-08-06T05:01:56.768Z",
+      "syncedAt": "2026-08-06T08:06:55.044Z",
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -5421,7 +5545,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785153996,
       "payTime": 1785154003,
-      "syncedAt": "2026-08-06T05:01:57.371Z",
+      "syncedAt": "2026-08-06T08:06:55.711Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5452,7 +5576,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785153896,
       "payTime": 1785153904,
-      "syncedAt": "2026-08-06T05:01:58.141Z",
+      "syncedAt": "2026-08-06T08:06:56.378Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5483,7 +5607,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785153455,
       "payTime": 1785153467,
-      "syncedAt": "2026-08-06T05:01:58.761Z",
+      "syncedAt": "2026-08-06T08:06:57.028Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5514,7 +5638,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785152780,
       "payTime": 1785152789,
-      "syncedAt": "2026-08-06T05:01:59.381Z",
+      "syncedAt": "2026-08-06T08:06:57.750Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5545,7 +5669,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785152526,
       "payTime": 1785152535,
-      "syncedAt": "2026-08-06T05:01:59.939Z",
+      "syncedAt": "2026-08-06T08:06:58.413Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5576,7 +5700,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785152461,
       "payTime": 1785152506,
-      "syncedAt": "2026-08-06T05:02:00.540Z",
+      "syncedAt": "2026-08-06T08:06:59.095Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5607,7 +5731,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785152286,
       "payTime": 1785152295,
-      "syncedAt": "2026-08-06T05:02:01.131Z",
+      "syncedAt": "2026-08-06T08:06:59.676Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5638,7 +5762,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785149408,
       "payTime": 1785149421,
-      "syncedAt": "2026-08-06T05:02:01.755Z",
+      "syncedAt": "2026-08-06T08:07:00.393Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5669,7 +5793,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785148965,
       "payTime": 1785148974,
-      "syncedAt": "2026-08-06T05:02:02.363Z",
+      "syncedAt": "2026-08-06T08:07:01.101Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5700,7 +5824,7 @@
       "commissionStatus": "未结算",
       "createTime": 1785148135,
       "payTime": 1785148140,
-      "syncedAt": "2026-08-06T05:02:02.896Z",
+      "syncedAt": "2026-08-06T08:07:01.762Z",
       "channel": "LLL",
       "zhaoshang": "大海"
     },
@@ -5731,7 +5855,7 @@
       "commissionStatus": "已结算",
       "createTime": 1785140527,
       "payTime": 1785140532,
-      "syncedAt": "2026-08-06T05:02:03.497Z",
+      "syncedAt": "2026-08-06T08:07:02.538Z",
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -5762,7 +5886,7 @@
       "commissionStatus": "取消结算",
       "createTime": 1785139795,
       "payTime": 1785139800,
-      "syncedAt": "2026-08-06T05:02:04.169Z",
+      "syncedAt": "2026-08-06T08:07:03.249Z",
       "channel": "",
       "zhaoshang": ""
     },
@@ -12686,9 +12810,9 @@
       "talentId": "of6oB3JrvNfgS9nOLqQAl7pdml9Z2C1lKNdrgpJ11RlbdSb-jwQYgDBt4rI0AOZEAdoAxuUKY_Jg",
       "talentType": "talent",
       "orderCount": 60,
-      "totalSales": 1134.2999999999997,
-      "totalServiceFee": 22.240000000000016,
-      "totalCommission": 373.9300000000001,
+      "totalSales": 1114.3999999999996,
+      "totalServiceFee": 21.850000000000016,
+      "totalCommission": 367.3700000000001,
       "channel": "听旧雨",
       "zhaoshang": "大海"
     },
@@ -12707,10 +12831,10 @@
       "name": "楠楠好物优选1店",
       "talentId": "ofkS7UG3zJVV0a2rdgpEwC5eyt4JPFBpXHYwi1HIA7gnWKXeLXaFTvQzRQ30BWpeCT-N94p-TuHg",
       "talentType": "talent",
-      "orderCount": 66,
-      "totalSales": 867.2999999999995,
+      "orderCount": 69,
+      "totalSales": 883.0999999999995,
       "totalServiceFee": 0.6299999999999999,
-      "totalCommission": 82.52999999999996,
+      "totalCommission": 84.10999999999996,
       "channel": "猪猪",
       "zhaoshang": ""
     },
@@ -12719,9 +12843,9 @@
       "talentId": "ofkr_u2VQkIV5yuHvWRmiOCWEUFbHiFlx226e4zfmPmUNf-UQWPz0PDMID_s9lj0jHMeBOQPvOBg",
       "talentType": "talent",
       "orderCount": 60,
-      "totalSales": 571.7999999999995,
-      "totalServiceFee": 5.170000000000002,
-      "totalCommission": 35.05000000000002,
+      "totalSales": 567.5999999999995,
+      "totalServiceFee": 5.130000000000002,
+      "totalCommission": 34.680000000000014,
       "channel": "LLL",
       "zhaoshang": "小宇宙"
     },
@@ -12825,17 +12949,6 @@
       "zhaoshang": ""
     },
     {
-      "name": "赵十七七七七",
-      "talentId": "of04Enn67KnysBK056B1o1mGhSvVp0q1xgv11ghG8wKLynawmEkGRh5IevKtFjXK21omleoJ0Epw",
-      "talentType": "talent",
-      "orderCount": 1,
-      "totalSales": 39.98,
-      "totalServiceFee": 0.39,
-      "totalCommission": 5.99,
-      "channel": "",
-      "zhaoshang": ""
-    },
-    {
       "name": "悦悦好物分享13",
       "talentId": "ofN1hGbDh2DD04cYO-GDQZMxPwoToRw92V7I7bCmNX1PkFQJkomBkUP8yybPrV-49Pvu45HO6PCw",
       "talentType": "talent",
@@ -12891,6 +13004,17 @@
       "zhaoshang": "小宇宙"
     },
     {
+      "name": "平台精选1号店",
+      "talentId": "ofGtfSX9G0ozN3LFnAmqx4f5YENYbGFs76-8HazLp0qs32equu1S6iKqpm4xhOgA1xBgOG7-1bwA",
+      "talentType": "talent",
+      "orderCount": 5,
+      "totalSales": 25.580000000000002,
+      "totalServiceFee": 0.62,
+      "totalCommission": 1.8199999999999998,
+      "channel": "魏佳旭",
+      "zhaoshang": "大海"
+    },
+    {
       "name": "小王家啊",
       "talentId": "ofx_EKxS_GflS8lkA6rcLfErwEK7kSXmEAHeOAqEDbXP7KZzvCkHmYT-ybIaQEIWW1BEOJWUagRg",
       "talentType": "talent",
@@ -12913,15 +13037,15 @@
       "zhaoshang": ""
     },
     {
-      "name": "平台精选1号店",
-      "talentId": "ofGtfSX9G0ozN3LFnAmqx4f5YENYbGFs76-8HazLp0qs32equu1S6iKqpm4xhOgA1xBgOG7-1bwA",
+      "name": "赵十七七七七",
+      "talentId": "of04Enn67KnysBK056B1o1mGhSvVp0q1xgv11ghG8wKLynawmEkGRh5IevKtFjXK21omleoJ0Epw",
       "talentType": "talent",
-      "orderCount": 4,
-      "totalSales": 21.590000000000003,
-      "totalServiceFee": 0.39,
-      "totalCommission": 1.3499999999999999,
-      "channel": "魏佳旭",
-      "zhaoshang": "大海"
+      "orderCount": 1,
+      "totalSales": 20.08,
+      "totalServiceFee": 0.2,
+      "totalCommission": 3.01,
+      "channel": "",
+      "zhaoshang": ""
     },
     {
       "name": "日用品工厂精选",
@@ -13399,8 +13523,8 @@
   },
   "_meta": {
     "source": "github-actions",
-    "time": "2026-08-06T05:02:04.172Z",
-    "count": 409,
+    "time": "2026-08-06T08:07:03.252Z",
+    "count": 413,
     "errors": 0,
     "syncDays": 7
   }
