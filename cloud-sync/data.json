@@ -16237,6 +16237,10 @@
     "小雪精选001|10001252046969": {
       "channel": "于东旭",
       "zhaoshang": ""
+    },
+    "小雪精选001|10001093888680": {
+      "channel": "",
+      "zhaoshang": "太阳花"
     }
   },
   "personnel": {
@@ -16391,7 +16395,7 @@
     "count": 502,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-08T08:36:14.936Z",
+    "configUpdated": "2026-08-08T08:36:24.528Z",
     "configUpdatedBy": "太阳花"
   }
 }
