@@ -16091,7 +16091,7 @@
   ],
   "mapping": {
     "贾铁锤的工厂直选": {
-      "channel": "zz",
+      "channel": "猪猪",
       "zhaoshang": "大海"
     },
     "乐子每一天": {
@@ -16168,7 +16168,7 @@
     },
     "鑫瑞福仓": {
       "channel": "LLL",
-      "zhaoshang": ""
+      "zhaoshang": "猪猪"
     },
     "渝姐来啦": {
       "channel": "于东旭",
@@ -16193,12 +16193,10 @@
   },
   "productMapping": {
     "鑫瑞福仓|10000237391702": {
-      "channel": "LLL",
       "zhaoshang": ""
     },
     "楠楠好物优选1店|10000237391702": {
-      "channel": "",
-      "zhaoshang": ""
+      "zhaoshang": "猪猪"
     },
     "楠楠好物优选1店|10000689052926": {
       "zhaoshang": "小宇宙"
@@ -16293,8 +16291,8 @@
       "zhaoshang": ""
     },
     "雨安时光|10000263584988": {
-      "channel": "听旧雨",
-      "zhaoshang": ""
+      "channel": "",
+      "zhaoshang": "小宇宙"
     },
     "小雪精选001|10001252046969": {
       "channel": "于东旭",
@@ -16460,6 +16458,8 @@
     "time": "2026-08-08T09:32:31.822Z",
     "count": 504,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-08T09:39:20.328Z",
+    "configUpdatedBy": "枝枝"
   }
 }
