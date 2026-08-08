@@ -16229,6 +16229,14 @@
     "小雪折扣仓001|10000330303573": {
       "channel": "于东旭",
       "zhaoshang": ""
+    },
+    "雨安时光|10000263584988": {
+      "channel": "听旧雨",
+      "zhaoshang": ""
+    },
+    "小雪精选001|10001252046969": {
+      "channel": "于东旭",
+      "zhaoshang": ""
     }
   },
   "personnel": {
@@ -16383,7 +16391,7 @@
     "count": 502,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-08T08:35:48.722Z",
+    "configUpdated": "2026-08-08T08:36:14.936Z",
     "configUpdatedBy": "太阳花"
   }
 }
