@@ -17684,6 +17684,10 @@
     "楠楠好物优选1店|10000025053381": {
       "channel": "",
       "zhaoshang": "小宇宙"
+    },
+    "山川国际仓|10000199594164": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
     }
   },
   "personnel": {
@@ -17837,6 +17841,8 @@
     "time": "2026-08-10T09:17:53.565Z",
     "count": 548,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-10T09:19:08.947Z",
+    "configUpdatedBy": "枝枝"
   }
 }
