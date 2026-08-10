@@ -17692,6 +17692,10 @@
     "小雪折扣仓001|10001093888680": {
       "channel": "于东旭",
       "zhaoshang": ""
+    },
+    "邹善杰|10001173589990": {
+      "channel": "于东旭",
+      "zhaoshang": ""
     }
   },
   "personnel": {
@@ -17845,6 +17849,8 @@
     "time": "2026-08-10T09:33:47.025Z",
     "count": 548,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-10T09:37:22.425Z",
+    "configUpdatedBy": "枝枝"
   }
 }
