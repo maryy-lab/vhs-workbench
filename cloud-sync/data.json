@@ -22517,7 +22517,8 @@
       "zhaoshang": ""
     },
     "小雪精选001|10001252046969": {
-      "zhaoshang": "小宇宙"
+      "channel": "于东旭",
+      "zhaoshang": ""
     },
     "小雪精选001|10001093888680": {
       "channel": "于东旭",
@@ -22544,8 +22545,8 @@
       "zhaoshang": ""
     },
     "铁杆大葱产地直发6号店|10000199594164": {
-      "channel": "",
-      "zhaoshang": "太阳花"
+      "channel": "听旧雨",
+      "zhaoshang": ""
     },
     "壹品食品大陶|10001252046969": {
       "channel": "于东旭",
@@ -22703,6 +22704,8 @@
     "time": "2026-08-11T08:55:57.600Z",
     "count": 704,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-11T08:58:45.412Z",
+    "configUpdatedBy": "枝枝"
   }
 }
