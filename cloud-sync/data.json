@@ -20296,7 +20296,8 @@
       "zhaoshang": "太阳花"
     },
     "小雪精选001|10000330303573": {
-      "zhaoshang": "小宇宙"
+      "channel": "于东旭",
+      "zhaoshang": ""
     },
     "雨安时光|10000276731686": {
       "channel": "听旧雨",
@@ -20318,11 +20319,12 @@
       "zhaoshang": "小宇宙"
     },
     "小雪精选001|10001093888680": {
-      "zhaoshang": "太阳花"
+      "channel": "于东旭",
+      "zhaoshang": ""
     },
     "小雪折扣仓001|10000199594164": {
-      "channel": "",
-      "zhaoshang": "太阳花"
+      "channel": "于东旭",
+      "zhaoshang": ""
     },
     "楠楠好物优选1店|10000025053381": {
       "channel": "",
@@ -20337,8 +20339,8 @@
       "zhaoshang": ""
     },
     "邹善杰|10001173589990": {
-      "channel": "",
-      "zhaoshang": "小宇宙"
+      "channel": "于东旭",
+      "zhaoshang": ""
     },
     "铁杆大葱产地直发6号店|10000199594164": {
       "channel": "",
@@ -20501,7 +20503,7 @@
     "count": 633,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-11T06:52:02.601Z",
+    "configUpdated": "2026-08-11T06:52:58.997Z",
     "configUpdatedBy": "枝枝"
   }
 }
