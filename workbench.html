@@ -2066,7 +2066,15 @@ function markOrderMappingChanged(idx, field, value){
   const productId = o.productId || '';
   if(productId){
     const pkey = talentName + '|' + productId;
-    if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = { channel: '', zhaoshang: '' };
+    if(!pendingProductMappings[pkey]) {
+      // 预填充已有的渠道/招商值，防止分配一个时另一个被清空
+      const existing = state.productMapping?.[pkey] || {};
+      const talentMap = state.mapping?.[talentName] || {};
+      pendingProductMappings[pkey] = {
+        channel: existing.channel || talentMap.channel || '',
+        zhaoshang: existing.zhaoshang || talentMap.zhaoshang || ''
+      };
+    }
     pendingProductMappings[pkey][field] = value;
   } else {
     if(!pendingMappings[talentName]) pendingMappings[talentName] = { channel: state.mapping[talentName]?.channel || '', zhaoshang: state.mapping[talentName]?.zhaoshang || '' };
@@ -2085,7 +2093,12 @@ function saveOrderMappings(){
     state.mapping[name] = val;
     const t = state.talents.find(x=>x.name===name); if(t){ t.channel=val.channel; t.zhaoshang=val.zhaoshang; }
   });
-  pEntries.forEach(([pkey, val]) => { state.productMapping[pkey] = val; });
+  pEntries.forEach(([pkey, val]) => {
+    // 合并而非覆盖：只更新已修改的字段，保留未修改的字段
+    if(!state.productMapping[pkey]) state.productMapping[pkey] = {};
+    if(val.channel !== undefined) state.productMapping[pkey].channel = val.channel;
+    if(val.zhaoshang !== undefined) state.productMapping[pkey].zhaoshang = val.zhaoshang;
+  });
   saveLocalState();
   debouncedCloudUpload();
   autoSaveCloudConfig();
@@ -2359,7 +2372,15 @@ function openProductAssign(talentName){
 
 function markProductMappingChanged(talentName, productId, field, value){
   const pkey = talentName + '|' + productId;
-  if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = { channel: '', zhaoshang: '' };
+  if(!pendingProductMappings[pkey]) {
+    // 预填充已有的渠道/招商值，防止分配一个时另一个被清空
+    const existing = state.productMapping?.[pkey] || {};
+    const talentMap = state.mapping?.[talentName] || {};
+    pendingProductMappings[pkey] = {
+      channel: existing.channel || talentMap.channel || '',
+      zhaoshang: existing.zhaoshang || talentMap.zhaoshang || ''
+    };
+  }
   pendingProductMappings[pkey][field] = value;
 }
 
@@ -2368,7 +2389,10 @@ function saveProductAssign(){
   if(!entries.length){ toast('没有修改需要保存','info'); return; }
   if(!state.productMapping) state.productMapping = {};
   entries.forEach(([pkey, val]) => {
-    state.productMapping[pkey] = val;
+    // 合并而非覆盖：只更新已修改的字段，保留未修改的字段
+    if(!state.productMapping[pkey]) state.productMapping[pkey] = {};
+    if(val.channel !== undefined) state.productMapping[pkey].channel = val.channel;
+    if(val.zhaoshang !== undefined) state.productMapping[pkey].zhaoshang = val.zhaoshang;
   });
   saveLocalState();
   debouncedCloudUpload();
@@ -3078,10 +3102,19 @@ function closeProductModal(){
 
 function markProductMappingChanged(talentName, productId, field, value){
   const pkey = talentName + '|' + productId;
-  if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = {};
+  if(!pendingProductMappings[pkey]) {
+    // 预填充已有的渠道/招商值，防止分配一个时另一个被清空
+    const existing = state.productMapping?.[pkey] || {};
+    const talentMap = state.mapping?.[talentName] || {};
+    pendingProductMappings[pkey] = {
+      channel: existing.channel || talentMap.channel || '',
+      zhaoshang: existing.zhaoshang || talentMap.zhaoshang || ''
+    };
+  }
   pendingProductMappings[pkey][field] = value;
   // 所有人都可以编辑，始终显示保存按钮
-  document.getElementById('saveProductMappingBtn').style.display = '';
+  const btn = document.getElementById('saveProductMappingBtn');
+  if(btn) btn.style.display = '';
 }
 
 async function saveProductMappings(){
