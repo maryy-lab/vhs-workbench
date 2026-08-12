@@ -25268,12 +25268,6 @@
         "contact": "",
         "note": "",
         "id": "ms9rfu23mbjff"
-      },
-      {
-        "name": "zz",
-        "contact": "",
-        "note": "",
-        "id": "ms507kgdt8vsg"
       }
     ],
     "zhaoshangs": [
@@ -25361,7 +25355,9 @@
   },
   "products": [],
   "_deleted": {
-    "channels": {},
+    "channels": {
+      "zz": 1786500383802
+    },
     "zhaoshangs": {},
     "users": {}
   },
@@ -25371,7 +25367,7 @@
     "count": 790,
     "errors": 0,
     "syncDays": 7,
-    "configUpdated": "2026-08-12T02:03:58.819Z",
+    "configUpdated": "2026-08-12T02:06:32.038Z",
     "configUpdatedBy": "枝枝"
   }
 }
