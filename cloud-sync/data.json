@@ -29681,6 +29681,10 @@
     "壹品食品大陶|10001252046969": {
       "channel": "于东旭",
       "zhaoshang": "小宇宙"
+    },
+    "日用品工厂精选|10000150773977": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
     }
   },
   "personnel": {
@@ -29811,10 +29815,6 @@
     "猪猪": {
       "password": "123456",
       "role": "viewer"
-    },
-    "zz": {
-      "password": "123456",
-      "role": "viewer"
     }
   },
   "products": [],
@@ -29823,13 +29823,17 @@
       "zz": 1786500383802
     },
     "zhaoshangs": {},
-    "users": {}
+    "users": {
+      "zz": 1786500422188
+    }
   },
   "_meta": {
     "source": "github-actions",
     "time": "2026-08-12T07:28:52.214Z",
     "count": 934,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-12T07:34:28.224Z",
+    "configUpdatedBy": "枝枝"
   }
 }
