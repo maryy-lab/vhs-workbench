@@ -35838,6 +35838,10 @@
     "日用品工厂精选|10000491560508": {
       "channel": "听旧雨",
       "zhaoshang": "小宇宙"
+    },
+    "小雪甄选仓666|10000330303573": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
     }
   },
   "personnel": {
@@ -35985,6 +35989,8 @@
     "time": "2026-08-13T09:51:41.631Z",
     "count": 1132,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-13T09:58:19.044Z",
+    "configUpdatedBy": "枝枝"
   }
 }
