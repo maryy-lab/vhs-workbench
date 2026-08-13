@@ -31049,6 +31049,10 @@
     "日用品工厂精选|10000150773977": {
       "channel": "听旧雨",
       "zhaoshang": "大海"
+    },
+    "日用品工厂精选|10000491560508": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
     }
   },
   "personnel": {
@@ -31196,6 +31200,8 @@
     "time": "2026-08-13T01:46:00.141Z",
     "count": 978,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-13T01:49:19.296Z",
+    "configUpdatedBy": "枝枝"
   }
 }
