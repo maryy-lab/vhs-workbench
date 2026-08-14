@@ -437,31 +437,56 @@ async function main() {
       log('无订单数据');
     }
 
-    // 3. 获取每条订单详情（失败的先收集，最后重试+兜底）
+    // 3. 获取每条订单详情（已有详情的跳过，只获取新订单/旧订单详情）
+    // 构建已有订单的 Map（按 id 索引），避免重复获取详情
+    const existingOrderMap = new Map();
+    for (const o of (existingConfig.orders || [])) {
+      existingOrderMap.set(o.id, o);
+    }
+    // 48小时内创建的订单强制刷新（状态可能变化），更早的复用缓存
+    const REFRESH_CUTOFF = Math.floor(Date.now() / 1000) - 48 * 3600;
+
     const detailedOrders = [];
     const failedItems = []; // 详情获取失败的订单，最后再重试一轮
-    let fetched = 0, errors = 0;
+    let fetched = 0, errors = 0, reused = 0;
 
     for (const item of orderList) {
+      const orderKey = `${item.order_id}_${item.sku_id}`;
+      const cached = existingOrderMap.get(orderKey);
+      // 复用条件：已有详情 且 非 _detailFailed 且 创建时间超过48小时（状态已稳定）
+      if (cached && !cached._detailFailed && cached.createTime && cached.createTime < REFRESH_CUTOFF) {
+        detailedOrders.push(cached);
+        reused++;
+        continue;
+      }
+
       try {
-        await sleep(200);
+        await sleep(150);
         const detail = await fetchOrderDetail(item.order_id, item.sku_id);
         const transformed = transformOrder(detail);
         detailedOrders.push(transformed);
         fetched++;
 
         if (fetched % 20 === 0) {
-          log(`已获取 ${fetched}/${orderList.length} 条订单详情...`);
+          log(`已获取 ${fetched}/${orderList.length} 条订单详情（复用 ${reused} 条）...`);
         }
       } catch (err) {
-        failedItems.push(item);
-        log(`订单 ${item.order_id} 详情获取失败(将重试): ${err.message}`);
+        // 如果有缓存数据，优先用缓存而非兜底
+        if (cached) {
+          detailedOrders.push(cached);
+          reused++;
+          log(`订单 ${item.order_id} 详情获取失败，使用缓存数据`);
+        } else {
+          failedItems.push(item);
+          log(`订单 ${item.order_id} 详情获取失败(将重试): ${err.message}`);
+        }
       }
     }
+    log(`第一轮: 新获取 ${fetched} 条，复用缓存 ${reused} 条，失败 ${failedItems.length} 条`);
 
     // 3.5 对失败的订单做第二轮重试（间隔更长，避免限流）
     if (failedItems.length > 0) {
-      log(`第一轮完成: 成功 ${fetched} 条，失败 ${failedItems.length} 条，开始重试...`);
+      log(`开始重试 ${failedItems.length} 条失败订单...`);
       for (const item of failedItems) {
         try {
           await sleep(1000); // 重试间隔更长
@@ -545,7 +570,8 @@ async function main() {
     console.log('═══════════════════════════════════════════');
     console.log('  ✅ 云端同步完成！');
     console.log(`  订单列表(API): ${orderList.length} 条`);
-    console.log(`  详情成功: ${fetched} 条`);
+    console.log(`  新获取详情: ${fetched} 条`);
+    console.log(`  复用缓存: ${reused} 条`);
     console.log(`  详情失败(已兜底): ${errors} 条`);
     console.log(`  合并旧订单: ${mergedCount} 条`);
     console.log(`  最终入库: ${mappedOrders.length} 条`);
