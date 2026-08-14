@@ -1,14 +1,20 @@
 /**
  * 云端定时同步脚本 - GitHub Actions 专用
- * 
+ *
  * 工作流程：
  * 1. 从 GitHub API 读取最新 data.json（获取用户保存的配置 + 旧订单）
- * 2. 从微信小店联盟API拉取佣金订单数据
- * 3. 合并新订单 + 旧订单（保留30天）+ 保留所有用户配置
+ * 2. 从微信小店联盟API拉取佣金订单列表（窗口自适应：从上次同步时间起算，不重复翻旧页）
+ * 3. 新订单获取详情入库；已入库订单按"最久未刷新优先"轮换刷新（48小时内状态会变化）
  * 4. 写入 data.json，GitHub Actions 自动提交到仓库
  * 5. 前端从 raw.githubusercontent.com 读取 data.json
- * 
- * 注意：不再使用 jsonblob（经常过期导致配置丢失）
+ *
+ * ★ 时间预算制（防超时停更的核心）：
+ *   无论订单量多大（哪怕每天上万单），每轮同步都在固定时间预算内优雅收尾，
+ *   绝不会超过 workflow 超时被强制取消。预算内干不完的增量工作自动留给下一轮
+ *   （自循环 5 分钟后触发），积压会被持续消化，链路永不卡死：
+ *   - 拉列表最多 7 分钟（超时停止翻页，未覆盖的时间起点记入 _meta.pendingListStart 下轮续拉）
+ *   - 拉详情最多到第 13 分钟（新单优先；预算耗尽时用列表数据兜底入库，下轮补全详情）
+ *   - data.json 行数硬上限 60000（超出丢弃最旧的，防文件过大拖垮前端和提交）
  */
 
 const axios = require('axios');
@@ -27,6 +33,13 @@ if (!APPID || !SECRET) {
   console.error('❌ 缺少环境变量 WX_APPID 或 WX_SECRET');
   process.exit(1);
 }
+
+// ============ 时间预算（防超时核心机制） ============
+const RUN_START = Date.now();
+const LIST_DEADLINE = RUN_START + 7 * 60 * 1000;    // 拉列表最多 7 分钟
+const DETAIL_DEADLINE = RUN_START + 13 * 60 * 1000; // 拉详情最多到第 13 分钟
+const KEEP_DAYS = 30;      // 订单保留天数
+const MAX_ORDERS = 60000;  // data.json 行数硬上限
 
 // ============ 工具函数 ============
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -100,13 +113,14 @@ async function getToken() {
   return accessToken;
 }
 
-// ============ 获取佣金单列表 ============
+// ============ 获取佣金单列表（带时间预算，超时优雅停止翻页） ============
 async function fetchOrderList(startTime, endTime) {
   const token = await getToken();
   const orders = [];
   let nextKey = '';
   let page = 0;
   let res;
+  let truncated = false;
 
   do {
     page++;
@@ -139,14 +153,23 @@ async function fetchOrderList(startTime, endTime) {
     }
 
     nextKey = res.data.next_key || '';
-    log(`获取订单列表第${page}页，累计${orders.length}条`);
+    if (page % 20 === 0) {
+      log(`订单列表已翻 ${page} 页，累计 ${orders.length} 条...`);
+    }
 
     if (nextKey && res.data.has_more) {
-      await sleep(300);
+      // ★ 时间预算：拉列表超过预算立即停止，已获取的部分照常入库，
+      //   未覆盖的时间起点由调用方记入 _meta.pendingListStart，下一轮接着拉
+      if (Date.now() > LIST_DEADLINE) {
+        truncated = true;
+        log(`⚠️ 拉列表已达时间预算（${page} 页/${orders.length} 条），剩余部分下一轮继续`);
+        break;
+      }
+      await sleep(150);
     }
   } while (nextKey && res.data.has_more);
 
-  return orders;
+  return { orders, truncated };
 }
 
 // ============ 获取佣金单详情 ============
@@ -261,7 +284,7 @@ function transformOrder(raw) {
   };
 }
 
-// ============ 列表数据兜底（详情获取失败时用，确保订单不丢失） ============
+// ============ 列表数据兜底（详情获取失败/预算耗尽时用，确保订单不丢失、下轮自动补全） ============
 function transformListOrder(item) {
   const commissionStatusMap = { 20: '未结算', 100: '已结算', 200: '取消结算' };
   const timestamp = item.create_time || Math.floor(Date.now() / 1000);
@@ -346,7 +369,8 @@ async function readExistingConfig() {
         products: data.products || [],
         productMapping: data.productMapping || {},
         orders: data.orders || [],
-        _deleted: data._deleted || { channels: {}, zhaoshangs: {}, users: {} }
+        _deleted: data._deleted || { channels: {}, zhaoshangs: {}, users: {} },
+        _meta: data._meta || null
       };
     }
   } catch (e) {
@@ -356,7 +380,8 @@ async function readExistingConfig() {
     mapping: {}, users: {}, personnel: { channels: [], zhaoshangs: [] },
     products: [], productMapping: {},
     orders: [],
-    _deleted: { channels: {}, zhaoshangs: {}, users: {} }
+    _deleted: { channels: {}, zhaoshangs: {}, users: {} },
+    _meta: null
   };
 }
 
@@ -375,7 +400,7 @@ async function readLatestConfigFromAPI() {
           'Accept': 'application/vnd.github+json',
           'User-Agent': 'sync-config-reader'
         },
-        timeout: 15000
+        timeout: 60000
       }
     );
     if (res.data && res.data.content) {
@@ -405,7 +430,7 @@ async function main() {
   console.log('═══════════════════════════════════════════');
   console.log('  视频号出单数据 - GitHub Actions 云端同步');
   console.log('═══════════════════════════════════════════');
-  console.log(`  同步范围: 最近 ${SYNC_DAYS} 天`);
+  console.log(`  时间预算: 列表≤7分钟, 详情≤13分钟`);
   console.log(`  配置来源: GitHub API + 本地 data.json`);
   console.log(`  运行时间: ${new Date().toISOString()}`);
   console.log('');
@@ -414,7 +439,7 @@ async function main() {
     // 1. 读取已有配置（优先从 GitHub API 读取最新版本，防止用户保存的配置被覆盖）
     log('读取已有配置...');
     let existingConfig = await readExistingConfig();
-    
+
     // 从 GitHub API 读取最新 data.json（checkout 后用户可能已保存新配置）
     log('从 GitHub API 读取最新配置...');
     const latestConfig = await readLatestConfigFromAPI();
@@ -425,133 +450,144 @@ async function main() {
     let userConfig = existingConfig;
     log(`最终配置: ${Object.keys(userConfig.mapping).length} 个映射, ${Object.keys(userConfig.users).length} 个用户, ${(userConfig.personnel?.channels||[]).length} 个渠道, ${(userConfig.personnel?.zhaoshangs||[]).length} 个招商`);
 
-    // 2. 获取订单列表
+    // 2. 拉取订单列表 —— 窗口自适应：
+    //    只从"上次成功同步时间 - 24小时"开始拉（更早的订单都已入库，无需重复翻页）。
+    //    若上次同步距今很远（断链/停更后重启），窗口自动覆盖整个停滞期，不会漏单。
+    //    若上轮拉列表被时间预算截断，从上轮记录的未覆盖起点继续拉。
     const endTime = Math.floor(Date.now() / 1000);
-    // 多往前取3天作为缓冲，确保不漏单（API按create_time过滤，与后台按付款时间可能略有差异）
-    let syncDays = SYNC_DAYS;
-    // 防窗口缝隙：若上次成功同步距今超过12小时（同步曾停滞/断链），
-    // 自动把拉取窗口扩大到覆盖停滞期，避免固定窗口跳过停滞期间产生的订单
-    const lastSyncMs = userConfig._meta?.time ? new Date(userConfig._meta.time).getTime() : 0;
-    if (lastSyncMs && (endTime * 1000 - lastSyncMs) > 12 * 3600 * 1000) {
-      const gapDays = Math.ceil((endTime * 1000 - lastSyncMs) / 86400000);
-      if (gapDays + 3 > syncDays) {
-        syncDays = gapDays + 3;
-        log(`⚠️ 检测到距上次同步已超过 ${gapDays} 天（同步曾停滞），窗口扩大到 ${syncDays} 天以补全停滞期订单`);
-      }
+    const lastMeta = userConfig._meta || {};
+    const lastSyncMs = lastMeta.time ? new Date(lastMeta.time).getTime() : 0;
+    let windowStartSec;
+    if (lastMeta.pendingListStart) {
+      // 上轮列表被预算截断，从截断点继续
+      windowStartSec = lastMeta.pendingListStart;
+      log(`上轮列表未拉完，从上次截断点继续: ${toBeijingTimeStr(windowStartSec)}`);
+    } else if (lastSyncMs) {
+      // 常规：从上次同步时间往前留 24 小时余量（覆盖付款晚于下单的订单）
+      windowStartSec = Math.floor(lastSyncMs / 1000) - 24 * 3600;
+    } else {
+      // 首次运行/无历史：拉完整 SYNC_DAYS+3 窗口
+      windowStartSec = endTime - (SYNC_DAYS + 3) * 24 * 3600;
     }
-    const startTime = endTime - (syncDays + 3) * 24 * 3600;
-    log(`开始同步最近 ${syncDays} 天的佣金订单（缓冲3天）...`);
+    // 窗口至少覆盖最近 6 小时
+    windowStartSec = Math.min(windowStartSec, endTime - 6 * 3600);
+    const windowDays = ((endTime - windowStartSec) / 86400).toFixed(2);
+    log(`拉取窗口: ${toBeijingTimeStr(windowStartSec)} ~ 现在（约 ${windowDays} 天）`);
 
-    const orderList = await fetchOrderList(startTime, endTime);
+    const { orders: orderList, truncated: listTruncated } = await fetchOrderList(windowStartSec, endTime);
     log(`共获取到 ${orderList.length} 条佣金单`);
 
-    if (orderList.length === 0) {
-      log('无订单数据');
-    }
-
-    // 3. 获取每条订单详情（已有详情的跳过，只获取新订单/旧订单详情）
-    // 构建已有订单的 Map（按 id 索引），避免重复获取详情
+    // 3. 处理订单（时间预算制）
     const existingOrderMap = new Map();
     for (const o of (existingConfig.orders || [])) {
       existingOrderMap.set(o.id, o);
     }
-    // 48小时内创建的订单强制刷新（状态可能变化），更早的复用缓存
-    const REFRESH_CUTOFF = Math.floor(Date.now() / 1000) - 48 * 3600;
+    const nowSec = Math.floor(Date.now() / 1000);
+    // 48小时内创建的订单状态会变化（付款/发货/取消结算），需要轮换刷新
+    const REFRESH_CUTOFF = nowSec - 48 * 3600;
 
-    const detailedOrders = [];
-    const failedItems = []; // 详情获取失败的订单，最后再重试一轮
-    let fetched = 0, errors = 0, reused = 0;
-    let emptyStatusRefreshed = 0; // 本轮补刷空状态旧缓存的计数（每轮上限，防超时）
-    const EMPTY_REFRESH_LIMIT = 400;
+    // 3a. 列表中未入库的新订单（必须本轮入库，预算耗尽时用列表数据兜底）
+    const newItems = orderList.filter(item => !existingOrderMap.has(`${item.order_id}_${item.sku_id}`));
+    log(`新订单 ${newItems.length} 条，已入库 ${orderList.length - newItems.length} 条`);
 
-    for (const item of orderList) {
+    // 3b. 从缓存构建刷新队列：详情失败的 / 状态为空的 / 48小时内状态可能变化的
+    //     按 syncedAt 最久未刷新的优先（大订单量下保证轮换公平，不会一直刷不到同一批）
+    const refreshQueue = (existingConfig.orders || [])
+      .filter(o => o._detailFailed || !o.orderStatus || (o.createTime && o.createTime >= REFRESH_CUTOFF))
+      .sort((a, b) => String(a.syncedAt || '').localeCompare(String(b.syncedAt || '')));
+    log(`待刷新(48h内/详情待补全): ${refreshQueue.length} 条`);
+
+    // 结果表：id -> 订单
+    const results = new Map();
+    let fetched = 0, refreshed = 0, fallbackUsed = 0, errors = 0;
+    let budgetHit = false;
+    const failedNew = [];
+
+    // 3c. 新订单优先获取详情（保证新单第一时间带全数据入库）
+    for (const item of newItems) {
       const orderKey = `${item.order_id}_${item.sku_id}`;
-      const cached = existingOrderMap.get(orderKey);
-      // 复用条件：已有详情 且 非 _detailFailed 且 创建时间超过48小时（状态已稳定）且 状态字段非空
-      // （旧数据 orderStatus 字段为空，需重新获取一次补全状态；每轮最多补刷400条，分多轮完成）
-      const canReuse = cached && !cached._detailFailed && cached.createTime && cached.createTime < REFRESH_CUTOFF
-        && (cached.orderStatus || emptyStatusRefreshed >= EMPTY_REFRESH_LIMIT);
-      if (canReuse) {
-        detailedOrders.push(cached);
-        reused++;
+      if (Date.now() > DETAIL_DEADLINE) {
+        // ★ 预算耗尽：用列表数据兜底入库（标记 _detailFailed，下轮自动补全详情）
+        budgetHit = true;
+        results.set(orderKey, transformListOrder(item));
+        fallbackUsed++;
         continue;
       }
-      if (cached && !cached.orderStatus && cached.createTime && cached.createTime < REFRESH_CUTOFF) {
-        emptyStatusRefreshed++;
-      }
-
       try {
         await sleep(150);
         const detail = await fetchOrderDetail(item.order_id, item.sku_id);
-        const transformed = transformOrder(detail);
-        detailedOrders.push(transformed);
+        results.set(orderKey, transformOrder(detail));
         fetched++;
-
-        if (fetched % 20 === 0) {
-          log(`已获取 ${fetched}/${orderList.length} 条订单详情（复用 ${reused} 条）...`);
-        }
+        if (fetched % 20 === 0) log(`新订单详情已获取 ${fetched}/${newItems.length}...`);
       } catch (err) {
-        // 如果有缓存数据，优先用缓存而非兜底
-        if (cached) {
-          detailedOrders.push(cached);
-          reused++;
-          log(`订单 ${item.order_id} 详情获取失败，使用缓存数据`);
-        } else {
-          failedItems.push(item);
-          log(`订单 ${item.order_id} 详情获取失败(将重试): ${err.message}`);
-        }
-      }
-    }
-    log(`第一轮: 新获取 ${fetched} 条，复用缓存 ${reused} 条，失败 ${failedItems.length} 条`);
-
-    // 3.5 对失败的订单做第二轮重试（间隔更长，避免限流）
-    if (failedItems.length > 0) {
-      log(`开始重试 ${failedItems.length} 条失败订单...`);
-      for (const item of failedItems) {
-        try {
-          await sleep(1000); // 重试间隔更长
-          const detail = await fetchOrderDetail(item.order_id, item.sku_id);
-          const transformed = transformOrder(detail);
-          detailedOrders.push(transformed);
-          fetched++;
-          log(`重试成功: 订单 ${item.order_id}`);
-        } catch (err) {
-          errors++;
-          // 兜底：用列表数据创建最小记录，确保订单不丢失
-          const fallback = transformListOrder(item);
-          detailedOrders.push(fallback);
-          log(`重试仍失败，已用列表数据兜底: 订单 ${item.order_id} (${err.message})`);
-        }
+        failedNew.push(item);
+        log(`新订单 ${item.order_id} 详情获取失败(将重试): ${err.message}`);
       }
     }
 
-    // 4. 合并旧订单（保留30天内，避免10天API窗口外的订单丢失）
-    const KEEP_DAYS = 30;
-    const nowSec = Math.floor(Date.now() / 1000);
+    // 3d. 失败的新订单重试一轮（间隔更长，避免限流）
+    for (const item of failedNew) {
+      const orderKey = `${item.order_id}_${item.sku_id}`;
+      if (Date.now() > DETAIL_DEADLINE) { budgetHit = true; results.set(orderKey, transformListOrder(item)); fallbackUsed++; continue; }
+      try {
+        await sleep(1000);
+        const detail = await fetchOrderDetail(item.order_id, item.sku_id);
+        results.set(orderKey, transformOrder(detail));
+        fetched++;
+      } catch (err) {
+        errors++;
+        results.set(orderKey, transformListOrder(item));
+        fallbackUsed++;
+        log(`重试仍失败，已用列表数据兜底: 订单 ${item.order_id}`);
+      }
+    }
+
+    // 3e. 轮换刷新已入库订单（最久未刷的优先，预算耗尽的留到下一轮）
+    for (const cached of refreshQueue) {
+      if (Date.now() > DETAIL_DEADLINE) { budgetHit = true; results.set(cached.id, cached); continue; }
+      try {
+        await sleep(120);
+        const detail = await fetchOrderDetail(cached.orderId, cached.skuId);
+        results.set(cached.id, transformOrder(detail));
+        refreshed++;
+        if (refreshed % 50 === 0) log(`已刷新 ${refreshed}/${refreshQueue.length} 条...`);
+      } catch (err) {
+        // 刷新失败用旧缓存，不影响本轮完成
+        results.set(cached.id, cached);
+      }
+    }
+
+    // 3f. 其余缓存订单直接复用
+    let reused = 0;
+    for (const o of (existingConfig.orders || [])) {
+      if (!results.has(o.id)) {
+        results.set(o.id, o);
+        reused++;
+      }
+    }
+
+    log(`处理完成: 新获取 ${fetched}, 刷新 ${refreshed}, 兜底 ${fallbackUsed}, 复用缓存 ${reused}, 刷新失败用旧缓存 ${errors}${budgetHit ? '（本轮触发时间预算，剩余工作量下一轮继续）' : ''}`);
+
+    // 4. 汇总 + 裁剪：保留 KEEP_DAYS 天内 且 不超过 MAX_ORDERS 行（超出丢最旧的，防 data.json 过大）
     const cutoffSec = nowSec - KEEP_DAYS * 24 * 3600;
-
-    // 用新获取的订单ID建立去重集合
-    const newOrderIds = new Set(detailedOrders.map(o => o.id));
-    let mergedCount = 0;
-    const existingOrders = existingConfig.orders || [];
-    for (const oldOrder of existingOrders) {
-      if (newOrderIds.has(oldOrder.id)) continue; // 新批次已有，跳过
-      // 检查是否在 KEEP_DAYS 天内（用 createTime 或 payTime 判断）
-      const orderTime = oldOrder.createTime || oldOrder.payTime || 0;
-      if (orderTime && orderTime > cutoffSec) {
-        detailedOrders.push(oldOrder);
-        mergedCount++;
-      }
+    let allOrders = [...results.values()].filter(o => {
+      const t = o.createTime || o.payTime || 0;
+      return !t || t > cutoffSec; // 时间未知的保守保留
+    });
+    allOrders.sort((a, b) => (b.createTime || b.payTime || 0) - (a.createTime || a.payTime || 0));
+    const trimmed = allOrders.length > MAX_ORDERS ? allOrders.length - MAX_ORDERS : 0;
+    if (trimmed > 0) {
+      allOrders = allOrders.slice(0, MAX_ORDERS);
+      log(`⚠️ 订单数超过上限 ${MAX_ORDERS}，已丢弃最旧的 ${trimmed} 条`);
     }
-    log(`合并旧订单: 新获取 ${fetched} 条，保留 ${mergedCount} 条旧订单（${KEEP_DAYS}天内），总计 ${detailedOrders.length} 条`);
+    const droppedOld = results.size - allOrders.length - trimmed;
+    log(`最终入库 ${allOrders.length} 条（保留${KEEP_DAYS}天内，复用${reused}条旧缓存${droppedOld > 0 ? `，剔除超期 ${droppedOld} 条` : ''}）`);
 
     // 5. 转换数据
-    const mappedOrders = applyMapping(detailedOrders, userConfig.mapping);
-    const talents = extractTalents(detailedOrders, userConfig.mapping);
+    const mappedOrders = applyMapping(allOrders, userConfig.mapping);
+    const talents = extractTalents(allOrders, userConfig.mapping);
 
-    log(`数据转换完成！成功 ${fetched} 条，失败 ${errors} 条`);
-
-    // 5. 保存到 data.json 文件（GitHub Actions 会自动提交到仓库）
+    // 6. 保存到 data.json 文件（GitHub Actions 会自动提交到仓库）
     // 安全检查：如果配置为空但已有配置非空，保留已有配置（防止意外清空）
     if((!userConfig.personnel?.channels?.length && !userConfig.personnel?.zhaoshangs?.length) && existingConfig.personnel && (existingConfig.personnel.channels?.length || existingConfig.personnel.zhaoshangs?.length)){
       log('⚠️ 警告：当前 personnel 为空但已有配置非空，保留已有配置');
@@ -565,6 +601,7 @@ async function main() {
       log('⚠️ 警告：当前 mapping 为空但已有配置非空，保留已有配置');
       userConfig.mapping = existingConfig.mapping;
     }
+    const durationSec = Math.round((Date.now() - RUN_START) / 1000);
     const output = {
       orders: mappedOrders,
       talents,
@@ -579,23 +616,31 @@ async function main() {
         time: new Date().toISOString(),
         count: mappedOrders.length,
         errors,
-        syncDays: SYNC_DAYS
+        fetched,
+        refreshed,
+        budgetHit,
+        durationSec,
+        // 列表被预算截断时记录未覆盖起点，下一轮从此继续拉（保证不漏单）
+        pendingListStart: listTruncated ? windowStartSec : undefined
       }
     };
-
-    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2));
+    // 压缩输出（不缩进），大幅减小文件体积，前端加载更快
+    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output));
     log(`数据已保存到 ${OUTPUT_FILE} (${(JSON.stringify(output).length / 1024).toFixed(1)} KB)`);
 
     console.log('');
     console.log('═══════════════════════════════════════════');
     console.log('  ✅ 云端同步完成！');
-    console.log(`  订单列表(API): ${orderList.length} 条`);
+    console.log(`  耗时: ${durationSec} 秒 (预算 780 秒)`);
+    console.log(`  订单列表(API): ${orderList.length} 条 (窗口约 ${windowDays} 天)`);
     console.log(`  新获取详情: ${fetched} 条`);
+    console.log(`  刷新详情: ${refreshed} 条`);
+    console.log(`  预算兜底(下轮补全): ${fallbackUsed} 条`);
     console.log(`  复用缓存: ${reused} 条`);
-    console.log(`  详情失败(已兜底): ${errors} 条`);
-    console.log(`  合并旧订单: ${mergedCount} 条`);
     console.log(`  最终入库: ${mappedOrders.length} 条`);
     console.log(`  达人数: ${talents.length}`);
+    console.log(`  时间预算触发: ${budgetHit ? '是(正常,剩余工作量下一轮继续)' : '否'}`);
+    console.log(`  列表截断: ${listTruncated ? '是(下轮续拉)' : '否'}`);
     console.log(`  数据文件: cloud-sync/data.json`);
     console.log('═══════════════════════════════════════════');
 
@@ -608,7 +653,7 @@ async function main() {
       existing._meta = existing._meta || {};
       existing._meta.lastSyncError = err.message;
       existing._meta.lastSyncErrorTime = new Date().toISOString();
-      fs.writeFileSync(OUTPUT_FILE, JSON.stringify(existing, null, 2));
+      fs.writeFileSync(OUTPUT_FILE, JSON.stringify(existing));
       log('已保留旧数据并标记同步错误状态');
     } catch (e2) {
       log(`无法更新错误标记: ${e2.message}`);
