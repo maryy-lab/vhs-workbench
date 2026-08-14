@@ -45483,7 +45483,7 @@
   ],
   "mapping": {
     "贾铁锤的工厂直选": {
-      "channel": "zz",
+      "channel": "",
       "zhaoshang": "大海"
     },
     "乐子每一天": {
@@ -45493,12 +45493,250 @@
     "山村阿刚": {
       "channel": "魏佳旭",
       "zhaoshang": "大海"
+    },
+    "🧚🏻‍♀️冯冯居家小铺": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "阿妹百货优选": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "广东阳妈": {
+      "channel": "听旧雨",
+      "zhaoshang": "枝枝"
+    },
+    "国货甄选工厂5号店": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "居家烟火小铺子521": {
+      "channel": "LLL",
+      "zhaoshang": "大海"
+    },
+    "可馨优品": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "沐槿家优选": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "沐浴露沐浴油沐浴露": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
+    },
+    "胖阿妹好物优选": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "平台精选1号店": {
+      "channel": "魏佳旭",
+      "zhaoshang": "大海"
+    },
+    "听旧雨.2": {
+      "channel": "听旧雨",
+      "zhaoshang": ""
+    },
+    "小王家啊": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "小燕子百货优选店": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
+    },
+    "心想事成Zndr": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "杨妹甄选百货": {
+      "channel": "魏佳旭",
+      "zhaoshang": ""
+    },
+    "楠楠好物优选1店": {
+      "channel": "猪猪",
+      "zhaoshang": ""
+    },
+    "鑫瑞福仓": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "渝姐来啦": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "月月的9852橱窗": {
+      "channel": "LLL",
+      "zhaoshang": "小宇宙"
+    },
+    "沐彤居家优选": {
+      "channel": "听旧雨",
+      "zhaoshang": "枝枝"
+    },
+    "微微笑轻创": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "小梦精选3029": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
     }
   },
   "productMapping": {
     "鑫瑞福仓|10000237391702": {
-      "channel": "LLL",
       "zhaoshang": ""
+    },
+    "楠楠好物优选1店|10000237391702": {
+      "zhaoshang": "猪猪"
+    },
+    "楠楠好物优选1店|10000689052926": {
+      "zhaoshang": "小宇宙"
+    },
+    "听旧雨.2|10000083279642": {
+      "channel": "听旧雨",
+      "zhaoshang": "枝枝"
+    },
+    "听旧雨.2|10000980039154": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "听旧雨.2|10000596738846": {
+      "zhaoshang": "小宇宙"
+    },
+    "杨妹甄选百货|10000083279642": {
+      "channel": "魏佳旭",
+      "zhaoshang": "枝枝"
+    },
+    "杨妹甄选百货|10000271156085": {
+      "channel": "魏佳旭",
+      "zhaoshang": "小宇宙"
+    },
+    "月月的9852橱窗|10000689052926": {
+      "channel": "",
+      "zhaoshang": ""
+    },
+    "居家烟火小铺子521|10000381332389": {
+      "channel": "",
+      "zhaoshang": ""
+    },
+    "悦悦好物分享13|10000714572971": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "悦悦好物分享13|10000233200678": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "悦悦好物分享13|10000856371572": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "山村阿刚|10000980039154": {
+      "zhaoshang": "小宇宙"
+    },
+    "山村阿刚|10000381332389": {
+      "zhaoshang": "大海"
+    },
+    "新航程幸福臻选|10000314404960": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "楠楠好物优选1店|10000628274040": {
+      "channel": "",
+      "zhaoshang": "小宇宙"
+    },
+    "壹品家有机食品|10001252046969": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "壹品食品大陶|10000199594164": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "日用品工厂精选|10000965676990": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "新航程幸福臻选|10000199594164": {
+      "channel": "于东旭",
+      "zhaoshang": "太阳花"
+    },
+    "小雪精选001|10000199594164": {
+      "channel": "于东旭",
+      "zhaoshang": "太阳花"
+    },
+    "小雪精选001|10000330303573": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "雨安时光|10000276731686": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "六儿的小店铺|10000385635742": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "小雪折扣仓001|10000330303573": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "雨安时光|10000263584988": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "小雪精选001|10001252046969": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "小雪精选001|10001093888680": {
+      "channel": "于东旭",
+      "zhaoshang": "太阳花"
+    },
+    "小雪折扣仓001|10000199594164": {
+      "channel": "于东旭",
+      "zhaoshang": "太阳花"
+    },
+    "楠楠好物优选1店|10000025053381": {
+      "channel": "",
+      "zhaoshang": "小宇宙"
+    },
+    "山川国际仓|10000199594164": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "小雪折扣仓001|10001093888680": {
+      "channel": "于东旭",
+      "zhaoshang": "太阳花"
+    },
+    "邹善杰|10001173589990": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "铁杆大葱产地直发6号店|10000199594164": {
+      "channel": "听旧雨",
+      "zhaoshang": "太阳花"
+    },
+    "壹品食品大陶|10001252046969": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "日用品工厂精选|10000150773977": {
+      "channel": "听旧雨",
+      "zhaoshang": "大海"
+    },
+    "日用品工厂精选|10000491560508": {
+      "channel": "听旧雨",
+      "zhaoshang": "小宇宙"
+    },
+    "小雪甄选仓666|10000330303573": {
+      "channel": "于东旭",
+      "zhaoshang": "小宇宙"
+    },
+    "微微笑轻创|10000075095999": {
+      "channel": "听旧雨",
+      "zhaoshang": "枝枝"
     }
   },
   "personnel": {
@@ -45508,12 +45746,6 @@
         "contact": "",
         "note": "",
         "id": "ms507a5ex88n6"
-      },
-      {
-        "name": "zz",
-        "contact": "",
-        "note": "",
-        "id": "ms507kgdt8vsg"
       },
       {
         "name": "LLL",
@@ -45544,6 +45776,18 @@
         "contact": "",
         "note": "",
         "id": "ms508rczblixy"
+      },
+      {
+        "name": "猪猪",
+        "contact": "",
+        "note": "",
+        "id": "msdgjkmu36au2"
+      },
+      {
+        "name": "于东旭",
+        "contact": "",
+        "note": "",
+        "id": "ms9rfu23mbjff"
       }
     ],
     "zhaoshangs": [
@@ -45570,6 +45814,12 @@
         "contact": "",
         "note": "",
         "id": "ms6dyuapf1olv"
+      },
+      {
+        "name": "猪猪",
+        "contact": "",
+        "note": "",
+        "id": "msdgka9qr1ii0"
       }
     ]
   },
@@ -45583,10 +45833,6 @@
       "role": "manager"
     },
     "小宇宙": {
-      "password": "123456",
-      "role": "viewer"
-    },
-    "zz": {
       "password": "123456",
       "role": "viewer"
     },
@@ -45617,19 +45863,29 @@
     "于东旭": {
       "password": "123456",
       "role": "viewer"
+    },
+    "猪猪": {
+      "password": "123456",
+      "role": "viewer"
     }
   },
   "products": [],
   "_deleted": {
-    "channels": {},
+    "channels": {
+      "zz": 1786500383802
+    },
     "zhaoshangs": {},
-    "users": {}
+    "users": {
+      "zz": 1786500422188
+    }
   },
   "_meta": {
     "source": "github-actions",
     "time": "2026-08-14T16:07:23.339Z",
     "count": 1450,
     "errors": 0,
-    "syncDays": 7
+    "syncDays": 7,
+    "configUpdated": "2026-08-14T16:09:50.094Z",
+    "configUpdatedBy": "枝枝"
   }
 }
