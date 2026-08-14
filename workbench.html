@@ -453,7 +453,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
   <div id="cloudModeBanner" style="display:none;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;padding:20px;border-radius:12px;margin-bottom:16px">
     <div style="font-size:18px;font-weight:600;margin-bottom:8px">☁️ 云端数据模式</div>
     <div style="font-size:14px;opacity:.9;line-height:1.8">
-      数据由 GitHub Actions 每 30 分钟自动从微信联盟 API 拉取并更新，无需手动同步。<br>
+      数据由 GitHub Actions 每 8 分钟自动从微信联盟 API 拉取并更新，无需手动同步。<br>
       如需在本地运行同步服务（更快的数据更新、API配置、商品同步等功能），请在电脑上双击「启动工作台.bat」。
     </div>
   </div>
@@ -3415,13 +3415,13 @@ async function triggerCloudSync(){
       body: JSON.stringify({ ref: 'main' })
     });
     if(resp.ok || resp.status === 204){
-      toast('✅ 同步已触发！数据约 2-3 分钟后更新，页面将自动刷新','success');
+      toast('✅ 同步已触发！数据约 2-10 分钟后更新，页面将自动刷新','success');
       // 30秒后开始轮询数据更新
       setTimeout(() => {
         let pollCount = 0;
         const poll = setInterval(async () => {
           pollCount++;
-          if(pollCount > 20){ clearInterval(poll); return; } // 最多等5分钟
+          if(pollCount > 40){ clearInterval(poll); return; } // 最多等10分钟
           await loadCloudData();
           const metaTime = state._meta?.time;
           if(metaTime){
