@@ -392,20 +392,23 @@ async function readLatestConfigFromAPI() {
     return null;
   }
   try {
+    // 用 raw 方式读取（base64 方式在文件超过 1MB 时会返回空内容失败）
     const res = await axios.get(
       `https://api.github.com/repos/${GITHUB_REPO}/contents/cloud-sync/data.json`,
       {
         headers: {
           'Authorization': `token ${GITHUB_TOKEN}`,
-          'Accept': 'application/vnd.github+json',
+          'Accept': 'application/vnd.github.raw',
           'User-Agent': 'sync-config-reader'
         },
-        timeout: 60000
+        timeout: 60000,
+        responseType: 'text',
+        transformResponse: [function(d) { return d; }]
       }
     );
-    if (res.data && res.data.content) {
-      const content = Buffer.from(res.data.content, 'base64').toString('utf-8');
-      const data = JSON.parse(content);
+    const raw = typeof res.data === 'string' ? res.data : Buffer.from(res.data).toString('utf-8');
+    if (raw) {
+      const data = JSON.parse(raw);
       log(`从 GitHub API 读取最新配置: ${Object.keys(data.mapping || {}).length} 个映射, ${Object.keys(data.users || {}).length} 个用户, ${(data.personnel?.channels||[]).length} 个渠道, ${(data.personnel?.zhaoshangs||[]).length} 个招商, ${(data.orders||[]).length} 条旧订单`);
       return {
         mapping: data.mapping || {},
