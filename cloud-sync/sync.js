@@ -253,7 +253,7 @@ function transformOrder(raw) {
     talentCommissionRatio,
     platformAmount: (commission.platform_amount || 0) / 100,
     promotionChannel: commission.promotion_channel === 1 ? '推客带货' : '橱窗带货',
-    orderStatus: orderStatusMap[orderInfo.status] || String(orderInfo.status || ''),
+    orderStatus: orderStatusMap[orderInfo.order_status] || String(orderInfo.order_status || ''),
     commissionStatus: commissionStatusMap[raw.status] || String(raw.status || ''),
     createTime: raw.create_time,
     payTime: orderInfo.pay_time,
@@ -389,7 +389,8 @@ async function readLatestConfigFromAPI() {
         products: data.products || [],
         productMapping: data.productMapping || {},
         orders: data.orders || [],
-        _deleted: data._deleted || { channels: {}, zhaoshangs: {}, users: {} }
+        _deleted: data._deleted || { channels: {}, zhaoshangs: {}, users: {} },
+        _meta: data._meta || null
       };
     }
   } catch (e) {
@@ -427,8 +428,19 @@ async function main() {
     // 2. 获取订单列表
     const endTime = Math.floor(Date.now() / 1000);
     // 多往前取3天作为缓冲，确保不漏单（API按create_time过滤，与后台按付款时间可能略有差异）
-    const startTime = endTime - (SYNC_DAYS + 3) * 24 * 3600;
-    log(`开始同步最近 ${SYNC_DAYS} 天的佣金订单（缓冲3天）...`);
+    let syncDays = SYNC_DAYS;
+    // 防窗口缝隙：若上次成功同步距今超过12小时（同步曾停滞/断链），
+    // 自动把拉取窗口扩大到覆盖停滞期，避免固定窗口跳过停滞期间产生的订单
+    const lastSyncMs = userConfig._meta?.time ? new Date(userConfig._meta.time).getTime() : 0;
+    if (lastSyncMs && (endTime * 1000 - lastSyncMs) > 12 * 3600 * 1000) {
+      const gapDays = Math.ceil((endTime * 1000 - lastSyncMs) / 86400000);
+      if (gapDays + 3 > syncDays) {
+        syncDays = gapDays + 3;
+        log(`⚠️ 检测到距上次同步已超过 ${gapDays} 天（同步曾停滞），窗口扩大到 ${syncDays} 天以补全停滞期订单`);
+      }
+    }
+    const startTime = endTime - (syncDays + 3) * 24 * 3600;
+    log(`开始同步最近 ${syncDays} 天的佣金订单（缓冲3天）...`);
 
     const orderList = await fetchOrderList(startTime, endTime);
     log(`共获取到 ${orderList.length} 条佣金单`);
@@ -449,15 +461,23 @@ async function main() {
     const detailedOrders = [];
     const failedItems = []; // 详情获取失败的订单，最后再重试一轮
     let fetched = 0, errors = 0, reused = 0;
+    let emptyStatusRefreshed = 0; // 本轮补刷空状态旧缓存的计数（每轮上限，防超时）
+    const EMPTY_REFRESH_LIMIT = 400;
 
     for (const item of orderList) {
       const orderKey = `${item.order_id}_${item.sku_id}`;
       const cached = existingOrderMap.get(orderKey);
-      // 复用条件：已有详情 且 非 _detailFailed 且 创建时间超过48小时（状态已稳定）
-      if (cached && !cached._detailFailed && cached.createTime && cached.createTime < REFRESH_CUTOFF) {
+      // 复用条件：已有详情 且 非 _detailFailed 且 创建时间超过48小时（状态已稳定）且 状态字段非空
+      // （旧数据 orderStatus 字段为空，需重新获取一次补全状态；每轮最多补刷400条，分多轮完成）
+      const canReuse = cached && !cached._detailFailed && cached.createTime && cached.createTime < REFRESH_CUTOFF
+        && (cached.orderStatus || emptyStatusRefreshed >= EMPTY_REFRESH_LIMIT);
+      if (canReuse) {
         detailedOrders.push(cached);
         reused++;
         continue;
+      }
+      if (cached && !cached.orderStatus && cached.createTime && cached.createTime < REFRESH_CUTOFF) {
+        emptyStatusRefreshed++;
       }
 
       try {
