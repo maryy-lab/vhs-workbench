@@ -2571,9 +2571,9 @@ function getDailyFilteredOrders(){
 function getServiceFeeByStatus(o){
   const fee = getServiceFee(o);
   const st = o.commissionStatus || '';
-  if(st === '已结算') return { settled: fee, unsettled: 0, cancelled: 0 };
-  if(st === '取消') return { settled: 0, unsettled: 0, cancelled: fee };
-  return { settled: 0, unsettled: fee, cancelled: 0 };
+  if(st === '已结算') return { settled: fee, unsettled: 0, cancelled: 0, cancelledCnt: 0 };
+  if(st === '取消结算' || st === '取消') return { settled: 0, unsettled: 0, cancelled: fee, cancelledCnt: 1 };
+  return { settled: 0, unsettled: fee, cancelled: 0, cancelledCnt: 0 };
 }
 
 function renderDaily(){
@@ -2585,7 +2585,7 @@ function renderDaily(){
   const totalService = orders.reduce((s,o)=>s+getServiceFee(o),0);
   const totalComm = orders.reduce((s,o)=>s+getCommission(o),0);
   const talentSet = new Set(orders.map(o=>o.talentName));
-  const sf = orders.reduce((acc,o)=>{ const s=getServiceFeeByStatus(o); acc.settled+=s.settled; acc.unsettled+=s.unsettled; acc.cancelled+=s.cancelled; return acc; },{settled:0,unsettled:0,cancelled:0});
+  const sf = orders.reduce((acc,o)=>{ const s=getServiceFeeByStatus(o); acc.settled+=s.settled; acc.unsettled+=s.unsettled; acc.cancelled+=s.cancelled; acc.cancelledCnt+=s.cancelledCnt; return acc; },{settled:0,unsettled:0,cancelled:0,cancelledCnt:0});
 
   document.getElementById('dailySummary').innerHTML = `
     <div class="stat-card"><div class="icon">💰</div><div class="label">销售额</div><div class="value">${fmtMoney(totalSales)}</div></div>
@@ -2593,7 +2593,7 @@ function renderDaily(){
     <div class="stat-card"><div class="icon">🏢</div><div class="label">服务费(总)</div><div class="value">${fmtMoney(totalService)}</div></div>
     <div class="stat-card"><div class="icon">✅</div><div class="label">已结算服务费</div><div class="value">${fmtMoney(sf.settled)}</div></div>
     <div class="stat-card"><div class="icon">⏳</div><div class="label">未结算服务费</div><div class="value">${fmtMoney(sf.unsettled)}</div></div>
-    <div class="stat-card"><div class="icon">❌</div><div class="label">取消结算</div><div class="value">${fmtMoney(sf.cancelled)}</div></div>`;
+    <div class="stat-card"><div class="icon">❌</div><div class="label">取消结算(单量)</div><div class="value">${sf.cancelledCnt}单</div></div>`;
 
   if(!orders.length){ document.getElementById('dailyTable').innerHTML = emptyHTML('所选日期暂无出单数据'); return; }
 
@@ -2604,7 +2604,7 @@ function renderDaily(){
       const p = o.operator || (o.source==='api'?'(API同步)':'(未指定)');
       if(!personMap[p]) personMap[p] = { name:p, days:{} };
       const d = o.date;
-      if(!personMap[p].days[d]) personMap[p].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, comm:0, talents:new Set() };
+      if(!personMap[p].days[d]) personMap[p].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0, talents:new Set() };
       personMap[p].days[d].count++;
       personMap[p].days[d].amount += getAmount(o);
       personMap[p].days[d].service += getServiceFee(o);
@@ -2614,13 +2614,14 @@ function renderDaily(){
       personMap[p].days[d].settled += s.settled;
       personMap[p].days[d].unsettled += s.unsettled;
       personMap[p].days[d].cancelled += s.cancelled;
+      personMap[p].days[d].cancelledCnt += s.cancelledCnt;
     });
     const persons = Object.values(personMap).sort((a,b)=>{
       const ba=Object.values(b.days).reduce((s,d)=>s+d.amount,0);
       const aa=Object.values(a.days).reduce((s,d)=>s+d.amount,0);
       return ba-aa;
     });
-    let html = `<table><thead><tr><th>人员</th><th>日期</th><th class="text-r">出单</th><th class="text-r">达人</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消</th><th class="text-r">佣金</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>人员</th><th>日期</th><th class="text-r">出单</th><th class="text-r">达人</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>`;
     persons.forEach(p => {
       const days = Object.entries(p.days).sort((a,b)=>b[0].localeCompare(a[0]));
       const tCount = days.reduce((s,[,d])=>s+d.count,0);
@@ -2628,17 +2629,17 @@ function renderDaily(){
       const tService = days.reduce((s,[,d])=>s+d.service,0);
       const tSettled = days.reduce((s,[,d])=>s+d.settled,0);
       const tUnsettled = days.reduce((s,[,d])=>s+d.unsettled,0);
-      const tCancelled = days.reduce((s,[,d])=>s+d.cancelled,0);
+      const tCancelledCnt = days.reduce((s,[,d])=>s+d.cancelledCnt,0);
       const tComm = days.reduce((s,[,d])=>s+d.comm,0);
       const tTalents = new Set(); days.forEach(([,d])=>d.talents.forEach(t=>tTalents.add(t)));
       days.forEach(([date, d], i) => {
         html += `<tr${i===0?'':' style="border-top:1px solid #F3F4F6"'}>
           ${i===0?`<td rowspan="${days.length}"><b>${esc(p.name)}</b></td>`:''}
-          <td>${date}</td><td class="text-r">${d.count}单</td><td class="text-r">${d.talents.size}</td><td class="text-r"><b>${fmtMoney(d.amount)}</b></td><td class="text-r">${d.service?fmtMoney(d.service):'-'}</td><td class="text-r" style="color:#10B981">${d.settled?fmtMoney(d.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${d.unsettled?fmtMoney(d.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${d.cancelled?fmtMoney(d.cancelled):'-'}</td><td class="text-r">${d.comm?fmtMoney(d.comm):'-'}</td></tr>`;
+          <td>${date}</td><td class="text-r">${d.count}单</td><td class="text-r">${d.talents.size}</td><td class="text-r"><b>${fmtMoney(d.amount)}</b></td><td class="text-r">${d.service?fmtMoney(d.service):'-'}</td><td class="text-r" style="color:#10B981">${d.settled?fmtMoney(d.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${d.unsettled?fmtMoney(d.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${d.cancelledCnt?d.cancelledCnt+'单':'-'}</td><td class="text-r">${d.comm?fmtMoney(d.comm):'-'}</td></tr>`;
       });
-      html += `<tr style="background:#F9FAFB;font-weight:600"><td>小计</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${tTalents.size}</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(tSettled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(tUnsettled)}</td><td class="text-r" style="color:#EF4444">${fmtMoney(tCancelled)}</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
+      html += `<tr style="background:#F9FAFB;font-weight:600"><td>小计</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${tTalents.size}</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(tSettled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(tUnsettled)}</td><td class="text-r" style="color:#EF4444">${tCancelledCnt}单</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
     });
-    html += `<tr style="background:#EEF2FF;font-weight:700"><td>总计</td><td>-</td><td class="text-r">${orders.length}单</td><td class="text-r">${talentSet.size}</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${fmtMoney(sf.cancelled)}</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
+    html += `<tr style="background:#EEF2FF;font-weight:700"><td>总计</td><td>-</td><td class="text-r">${orders.length}单</td><td class="text-r">${talentSet.size}</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${sf.cancelledCnt}单</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
     html += `</tbody></table>`;
     document.getElementById('dailyTable').innerHTML = html;
   } else if(mode === 'byTalent'){
@@ -2648,7 +2649,7 @@ function renderDaily(){
       const n = o.talentName || '未知';
       if(!talentMap[n]) talentMap[n] = { name:n, channel:getChannel(o), zs:getZhaoshang(o), days:{} };
       const d = o.date;
-      if(!talentMap[n].days[d]) talentMap[n].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, comm:0 };
+      if(!talentMap[n].days[d]) talentMap[n].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0 };
       talentMap[n].days[d].count++;
       talentMap[n].days[d].amount += getAmount(o);
       talentMap[n].days[d].service += getServiceFee(o);
@@ -2657,9 +2658,10 @@ function renderDaily(){
       talentMap[n].days[d].settled += s.settled;
       talentMap[n].days[d].unsettled += s.unsettled;
       talentMap[n].days[d].cancelled += s.cancelled;
+      talentMap[n].days[d].cancelledCnt += s.cancelledCnt;
     });
     const talents = Object.values(talentMap).sort((a,b)=>Object.values(b.days).reduce((s,d)=>s+d.amount,0)-Object.values(a.days).reduce((s,d)=>s+d.amount,0));
-    let html = `<table><thead><tr><th>达人</th><th>渠道</th><th>招商</th><th>日期</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消</th><th class="text-r">佣金</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>达人</th><th>渠道</th><th>招商</th><th>日期</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>`;
     talents.forEach(t => {
       const days = Object.entries(t.days).sort((a,b)=>b[0].localeCompare(a[0]));
       const tCount = days.reduce((s,[,d])=>s+d.count,0);
@@ -2667,16 +2669,16 @@ function renderDaily(){
       const tService = days.reduce((s,[,d])=>s+d.service,0);
       const tSettled = days.reduce((s,[,d])=>s+d.settled,0);
       const tUnsettled = days.reduce((s,[,d])=>s+d.unsettled,0);
-      const tCancelled = days.reduce((s,[,d])=>s+d.cancelled,0);
+      const tCancelledCnt = days.reduce((s,[,d])=>s+d.cancelledCnt,0);
       const tComm = days.reduce((s,[,d])=>s+d.comm,0);
       days.forEach(([date, d], i) => {
         html += `<tr${i===0?'':' style="border-top:1px solid #F3F4F6"'}>
           ${i===0?`<td rowspan="${days.length}"><b>${esc(t.name)}</b></td><td rowspan="${days.length}"><span class="tag tag-blue">${esc(t.channel)||'-'}</span></td><td rowspan="${days.length}"><span class="tag tag-purple">${esc(t.zs)||'-'}</span></td>`:''}
-          <td>${date}</td><td class="text-r">${d.count}单</td><td class="text-r"><b>${fmtMoney(d.amount)}</b></td><td class="text-r">${d.service?fmtMoney(d.service):'-'}</td><td class="text-r" style="color:#10B981">${d.settled?fmtMoney(d.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${d.unsettled?fmtMoney(d.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${d.cancelled?fmtMoney(d.cancelled):'-'}</td><td class="text-r">${d.comm?fmtMoney(d.comm):'-'}</td></tr>`;
+          <td>${date}</td><td class="text-r">${d.count}单</td><td class="text-r"><b>${fmtMoney(d.amount)}</b></td><td class="text-r">${d.service?fmtMoney(d.service):'-'}</td><td class="text-r" style="color:#10B981">${d.settled?fmtMoney(d.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${d.unsettled?fmtMoney(d.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${d.cancelledCnt?d.cancelledCnt+'单':'-'}</td><td class="text-r">${d.comm?fmtMoney(d.comm):'-'}</td></tr>`;
       });
-      html += `<tr style="background:#F9FAFB;font-weight:600"><td colspan="3">小计</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(tSettled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(tUnsettled)}</td><td class="text-r" style="color:#EF4444">${fmtMoney(tCancelled)}</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
+      html += `<tr style="background:#F9FAFB;font-weight:600"><td colspan="3">小计</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(tSettled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(tUnsettled)}</td><td class="text-r" style="color:#EF4444">${tCancelledCnt}单</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
     });
-    html += `<tr style="background:#EEF2FF;font-weight:700"><td colspan="3">总计</td><td>-</td><td class="text-r">${orders.length}单</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${fmtMoney(sf.cancelled)}</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
+    html += `<tr style="background:#EEF2FF;font-weight:700"><td colspan="3">总计</td><td>-</td><td class="text-r">${orders.length}单</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${sf.cancelledCnt}单</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
     html += `</tbody></table>`;
     document.getElementById('dailyTable').innerHTML = html;
   } else {
@@ -2684,7 +2686,7 @@ function renderDaily(){
     const groupMap = {};
     orders.forEach(o => {
       const key = `${o.date}_${o.talentName}`;
-      if(!groupMap[key]) groupMap[key] = { date:o.date, name:o.talentName, channel:getChannel(o), zs:getZhaoshang(o), count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, comm:0, product:getProduct(o) };
+      if(!groupMap[key]) groupMap[key] = { date:o.date, name:o.talentName, channel:getChannel(o), zs:getZhaoshang(o), count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0, product:getProduct(o) };
       groupMap[key].count++;
       groupMap[key].amount += getAmount(o);
       groupMap[key].service += getServiceFee(o);
@@ -2693,10 +2695,11 @@ function renderDaily(){
       groupMap[key].settled += s.settled;
       groupMap[key].unsettled += s.unsettled;
       groupMap[key].cancelled += s.cancelled;
+      groupMap[key].cancelledCnt += s.cancelledCnt;
     });
     const rows = Object.values(groupMap).sort((a,b)=>b.date.localeCompare(a.date)||b.amount-a.amount);
-    document.getElementById('dailyTable').innerHTML = `<table><thead><tr><th>日期</th><th>达人</th><th>渠道</th><th>招商</th><th>商品</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消</th><th class="text-r">佣金</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.date}</td><td><b>${esc(r.name)}</b></td><td><span class="tag tag-blue">${esc(r.channel)||'-'}</span></td><td><span class="tag tag-purple">${esc(r.zs)||'-'}</span></td><td>${esc(r.product)||'-'}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r" style="color:#10B981">${r.settled?fmtMoney(r.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${r.unsettled?fmtMoney(r.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${r.cancelled?fmtMoney(r.cancelled):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td></tr>`).join('')}
-    <tr style="background:#EEF2FF;font-weight:700"><td colspan="5">合计</td><td class="text-r">${orders.length}单</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${fmtMoney(sf.cancelled)}</td><td class="text-r">${fmtMoney(totalComm)}</td></tr></tbody></table>`;
+    document.getElementById('dailyTable').innerHTML = `<table><thead><tr><th>日期</th><th>达人</th><th>渠道</th><th>招商</th><th>商品</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.date}</td><td><b>${esc(r.name)}</b></td><td><span class="tag tag-blue">${esc(r.channel)||'-'}</span></td><td><span class="tag tag-purple">${esc(r.zs)||'-'}</span></td><td>${esc(r.product)||'-'}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r" style="color:#10B981">${r.settled?fmtMoney(r.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${r.unsettled?fmtMoney(r.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${r.cancelledCnt?r.cancelledCnt+'单':'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td></tr>`).join('')}
+    <tr style="background:#EEF2FF;font-weight:700"><td colspan="5">合计</td><td class="text-r">${orders.length}单</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${sf.cancelledCnt}单</td><td class="text-r">${fmtMoney(totalComm)}</td></tr></tbody></table>`;
   }
 }
 
