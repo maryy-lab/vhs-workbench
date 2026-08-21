@@ -2533,19 +2533,15 @@ function populateDailyUserFilter(){
     const c = getChannel(o); if(c && c !== '未分配') chSet.add(c);
     const z = getZhaoshang(o); if(z && z !== '未分配') zsSet.add(z);
   });
-  // 同名的人如果既是渠道又是招商，单独归入「渠道+招商」组（选TA时两种归属的业绩都算）
-  const dualSet = new Set();
-  zsSet.forEach(z => { if(chSet.has(z)){ dualSet.add(z); zsSet.delete(z); chSet.delete(z); } });
-  const dualList = [...dualSet].sort((a,b)=>a.localeCompare(b,'zh'));
+  // 双重身份（既是渠道又是招商）的人：同时出现在渠道组和招商组，点哪组就看哪条线的业绩
   const chList = [...chSet].sort((a,b)=>a.localeCompare(b,'zh'));
   const zsList = [...zsSet].sort((a,b)=>a.localeCompare(b,'zh'));
   let html = '';
   if(isManager){
     html += '<option value="all">🏢 公司整体</option>';
     html += '<option value="me">👤 我的数据</option>';
-    if(dualList.length) html += '<optgroup label="⭐ 渠道+招商">' + dualList.map(c => `<option value="p:${esc(c)}">⭐ ${esc(c)}</option>`).join('') + '</optgroup>';
-    if(chList.length) html += '<optgroup label="📡 渠道人员">' + chList.map(c => `<option value="p:${esc(c)}">📡 ${esc(c)}</option>`).join('') + '</optgroup>';
-    if(zsList.length) html += '<optgroup label="💼 招商人员">' + zsList.filter(z=>z!==currentUser).map(z => `<option value="p:${esc(z)}">💼 ${esc(z)}</option>`).join('') + '</optgroup>';
+    if(chList.length) html += '<optgroup label="📡 渠道人员">' + chList.map(c => `<option value="ch:${esc(c)}">📡 ${esc(c)}</option>`).join('') + '</optgroup>';
+    if(zsList.length) html += '<optgroup label="💼 招商人员">' + zsList.filter(z=>z!==currentUser).map(z => `<option value="zs:${esc(z)}">💼 ${esc(z)}</option>`).join('') + '</optgroup>';
   } else {
     html = '<option value="me" selected>👤 我的数据</option>';
   }
