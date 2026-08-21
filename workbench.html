@@ -388,7 +388,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <select class="input" id="dailyMode" onchange="renderDaily()" style="min-width:120px">
       <option value="byDate">按日期查看</option>
       <option value="byTalent">按达人汇总</option>
-      <option value="byPerson">按人员查看</option>
+      <option value="byPerson">按人员查看（招商业绩）</option>
     </select>
     <button class="btn btn-outline btn-sm" onclick="document.getElementById('dailyStart').value='';document.getElementById('dailyEnd').value='';renderDaily()">清除范围</button>
   </div>
@@ -2522,12 +2522,16 @@ function populateDailyUserFilter(){
   const sel = document.getElementById('dailyUserFilter');
   if(!sel) return;
   const isManager = canEdit();
+  // 人员 = 招商人员管理里的人 + 订单里实际出现过的招商名
+  const zsSet = new Set();
+  (state.personnel && state.personnel.zhaoshangs || []).forEach(p => { if(p && p.name) zsSet.add(p.name); });
+  state.orders.forEach(o => { const z = getZhaoshang(o); if(z && z !== '未分配') zsSet.add(z); });
+  const zsList = [...zsSet].sort((a,b)=>a.localeCompare(b,'zh'));
   let html = '';
   if(isManager){
     html += '<option value="all">🏢 公司整体</option>';
     html += '<option value="me">👤 我的数据</option>';
-    const ops = [...new Set(state.orders.map(o=>o.operator).filter(Boolean))].sort();
-    ops.forEach(op => { if(op !== currentUser) html += `<option value="${esc(op)}">👤 ${esc(op)}</option>`; });
+    zsList.forEach(z => { if(z !== currentUser) html += `<option value="${esc(z)}">💼 ${esc(z)}</option>`; });
   } else {
     html = '<option value="me" selected>👤 我的数据</option>';
   }
@@ -2550,9 +2554,11 @@ function getDailyFilteredOrders(){
   if(sel) sel.dataset.prev = userVal;
   let orders = [...state.orders];
   if(userVal === 'me'){
-    orders = orders.filter(o => o.operator === currentUser || (!o.operator && o.source !== 'api'));
+    // 我的数据 = 招商分配给我的订单 + 我手动录入的订单
+    orders = orders.filter(o => getZhaoshang(o) === currentUser || o.operator === currentUser);
   } else if(userVal !== 'all'){
-    orders = orders.filter(o => o.operator === userVal);
+    // 按招商人员筛选
+    orders = orders.filter(o => getZhaoshang(o) === userVal);
   }
   const startVal = document.getElementById('dailyStart').value;
   const endVal = document.getElementById('dailyEnd').value;
@@ -2598,10 +2604,10 @@ function renderDaily(){
   if(!orders.length){ document.getElementById('dailyTable').innerHTML = emptyHTML('所选日期暂无出单数据'); return; }
 
   if(mode === 'byPerson' && canEdit()){
-    // 按人员查看：每行一个人，按日期展开
+    // 按人员查看：每行一个招商人员（按达人/商品的招商分配归属），按日期展开
     const personMap = {};
     orders.forEach(o => {
-      const p = o.operator || (o.source==='api'?'(API同步)':'(未指定)');
+      const p = getZhaoshang(o) || '(未分配)';
       if(!personMap[p]) personMap[p] = { name:p, days:{} };
       const d = o.date;
       if(!personMap[p].days[d]) personMap[p].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0, talents:new Set() };
@@ -2621,7 +2627,7 @@ function renderDaily(){
       const aa=Object.values(a.days).reduce((s,d)=>s+d.amount,0);
       return ba-aa;
     });
-    let html = `<table><thead><tr><th>人员</th><th>日期</th><th class="text-r">出单</th><th class="text-r">达人</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>招商人员</th><th>日期</th><th class="text-r">出单</th><th class="text-r">达人</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>`;
     persons.forEach(p => {
       const days = Object.entries(p.days).sort((a,b)=>b[0].localeCompare(a[0]));
       const tCount = days.reduce((s,[,d])=>s+d.count,0);
