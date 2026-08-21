@@ -383,6 +383,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <input type="date" class="input" id="dailyStart" onchange="renderDaily()">
     <span>~</span>
     <input type="date" class="input" id="dailyEnd" onchange="renderDaily()">
+    <button class="btn btn-outline btn-sm" onclick="document.getElementById('dailyStart').value='';document.getElementById('dailyEnd').value='';renderDaily()">清除范围</button>
     <div class="spacer"></div>
     <select class="input" id="dailyUserFilter" onchange="renderDaily()" style="min-width:130px"></select>
     <select class="input" id="dailyMode" onchange="renderDaily()" style="min-width:120px">
@@ -390,7 +391,6 @@ label{font-size:13px;color:var(--muted);font-weight:500}
       <option value="byTalent">按达人汇总</option>
       <option value="byPerson">按人员查看（招商+渠道业绩）</option>
     </select>
-    <button class="btn btn-outline btn-sm" onclick="document.getElementById('dailyStart').value='';document.getElementById('dailyEnd').value='';renderDaily()">清除范围</button>
   </div>
   <div class="stat-grid" id="dailySummary"></div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="dailyTable" style="max-height:600px;overflow-y:auto"></div></div>
