@@ -2533,16 +2533,19 @@ function populateDailyUserFilter(){
     const c = getChannel(o); if(c && c !== '未分配') chSet.add(c);
     const z = getZhaoshang(o); if(z && z !== '未分配') zsSet.add(z);
   });
-  // 同名的人如果既是渠道又是招商，从招商列表里去掉（渠道组优先展示，避免重复行）
-  zsSet.forEach(z => { if(chSet.has(z)) zsSet.delete(z); });
+  // 同名的人如果既是渠道又是招商，单独归入「渠道+招商」组（选TA时两种归属的业绩都算）
+  const dualSet = new Set();
+  zsSet.forEach(z => { if(chSet.has(z)){ dualSet.add(z); zsSet.delete(z); chSet.delete(z); } });
+  const dualList = [...dualSet].sort((a,b)=>a.localeCompare(b,'zh'));
   const chList = [...chSet].sort((a,b)=>a.localeCompare(b,'zh'));
   const zsList = [...zsSet].sort((a,b)=>a.localeCompare(b,'zh'));
   let html = '';
   if(isManager){
     html += '<option value="all">🏢 公司整体</option>';
     html += '<option value="me">👤 我的数据</option>';
-    if(chList.length) html += '<optgroup label="📡 渠道人员">' + chList.map(c => `<option value="ch:${esc(c)}">📡 ${esc(c)}</option>`).join('') + '</optgroup>';
-    if(zsList.length) html += '<optgroup label="💼 招商人员">' + zsList.filter(z=>z!==currentUser).map(z => `<option value="zs:${esc(z)}">💼 ${esc(z)}</option>`).join('') + '</optgroup>';
+    if(dualList.length) html += '<optgroup label="⭐ 渠道+招商">' + dualList.map(c => `<option value="p:${esc(c)}">⭐ ${esc(c)}</option>`).join('') + '</optgroup>';
+    if(chList.length) html += '<optgroup label="📡 渠道人员">' + chList.map(c => `<option value="p:${esc(c)}">📡 ${esc(c)}</option>`).join('') + '</optgroup>';
+    if(zsList.length) html += '<optgroup label="💼 招商人员">' + zsList.filter(z=>z!==currentUser).map(z => `<option value="p:${esc(z)}">💼 ${esc(z)}</option>`).join('') + '</optgroup>';
   } else {
     html = '<option value="me" selected>👤 我的数据</option>';
   }
@@ -2570,8 +2573,12 @@ function getDailyFilteredOrders(){
     orders = orders.filter(o => getZhaoshang(o) === currentUser || getChannel(o) === currentUser || o.operator === currentUser);
   } else if(userVal === 'all'){
     // 公司整体：不筛选
+  } else if(userVal.indexOf('p:') === 0){
+    // 按人员筛选：TA名下的订单，渠道归属或招商归属都算（支持一人兼任渠道+招商）
+    const n = userVal.slice(2);
+    orders = orders.filter(o => getChannel(o) === n || getZhaoshang(o) === n);
   } else if(userVal.indexOf('ch:') === 0){
-    // 按渠道人员筛选
+    // 兼容旧值：仅按渠道归属
     const n = userVal.slice(3);
     orders = orders.filter(o => getChannel(o) === n);
   } else if(userVal.indexOf('zs:') === 0){
@@ -2648,11 +2655,16 @@ function renderDaily(){
     };
     orders.forEach(o => {
       const zs = getZhaoshang(o), ch = getChannel(o);
-      if(filterVal.indexOf('ch:') === 0){
-        // 已锁定某个渠道人员，只统计该人的渠道业绩
+      if(filterVal.indexOf('p:') === 0){
+        // 已锁定某个人：TA名下的订单按实际归属分别计入（TA是招商的算招商业绩、是渠道的算渠道业绩）
+        const n = filterVal.slice(2);
+        if(zs === n) addOrder('招商', zs, o);
+        if(ch === n) addOrder('渠道', ch, o);
+      } else if(filterVal.indexOf('ch:') === 0){
+        // 兼容旧值：仅渠道业绩
         if(ch === filterVal.slice(3)) addOrder('渠道', ch, o);
       } else if(filterVal.indexOf('zs:') === 0){
-        // 已锁定某个招商人员，只统计该人的招商业绩
+        // 兼容旧值：仅招商业绩
         if(zs === filterVal.slice(3)) addOrder('招商', zs, o);
       } else {
         // 公司整体/我的数据：渠道、招商两条线都展示（同一订单会分别计入渠道和招商两人的业绩）
