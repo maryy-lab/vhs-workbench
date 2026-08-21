@@ -222,6 +222,11 @@ label{font-size:13px;color:var(--muted);font-weight:500}
 .login-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border)}
 .login-tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
 .login-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+/* Pagination */
+.pagination{display:flex;align-items:center;gap:8px;justify-content:center;padding:10px 4px;flex-wrap:wrap}
+.pagination button{min-width:36px}
+.pagination .page-info{font-size:13px;color:var(--muted);white-space:nowrap}
+.pagination select{width:auto;min-width:50px}
 </style>
 <script src="https://beacon.cdn.qq.com/sdk/4.5.9/beacon_web.min.js"></script>
 <script>
@@ -344,7 +349,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <button class="btn btn-primary btn-sm edit-only" onclick="openOrderModal()">➕ 添加出单记录</button>
     <button class="btn btn-success btn-sm edit-only" id="orderSaveMappingBtn" onclick="saveOrderMappings()" style="display:none">💾 保存渠道/招商修改</button>
     <div class="spacer"></div>
-    <input class="input" id="orderSearch" placeholder="搜索达人/商品..." oninput="renderOrders()" style="width:180px">
+    <input class="input" id="orderSearch" placeholder="搜索达人/商品..." oninput="debouncedRenderOrders()" style="width:180px">
     <select class="input" id="filterChannel" onchange="renderOrders()" style="min-width:120px"><option value="">全部渠道</option></select>
     <select class="input" id="filterZS" onchange="renderOrders()" style="min-width:120px"><option value="">全部招商</option></select>
     <select class="input" id="filterPeriod" onchange="renderOrders()" style="min-width:100px"><option value="all">全部时间</option><option value="1">今日</option><option value="7">近7天</option><option value="30">近30天</option></select>
@@ -352,6 +357,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="ordersTable" style="max-height:600px;overflow-y:auto"></div></div>
   <div id="ordersSummary" style="padding:8px 4px;font-size:13px;color:var(--muted)"></div>
+  <div id="ordersPagination" class="pagination"></div>
 </div>
 
 <!-- ===== Talents ===== -->
@@ -360,11 +366,12 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <button class="btn btn-primary btn-sm edit-only" onclick="openTalentModal()">➕ 添加达人</button>
     <button class="btn btn-success btn-sm edit-only" id="saveMappingBtn" onclick="saveAllMappings()" style="display:none">💾 保存渠道/招商修改</button>
     <div class="spacer"></div>
-    <input class="input" id="talentSearch" placeholder="搜索达人名..." oninput="renderTalents()" style="width:200px">
+    <input class="input" id="talentSearch" placeholder="搜索达人名..." oninput="debouncedRenderTalents()" style="width:200px">
     <select class="input" id="talentFilterAssign" onchange="renderTalents()" style="min-width:100px"><option value="">分配状态</option><option value="assigned">已分配</option><option value="unassigned">未分配</option></select>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="talentsTable" style="max-height:600px;overflow-y:auto"></div></div>
   <div style="padding:8px 4px;font-size:12px;color:var(--muted)" id="talentHint"></div>
+  <div id="talentsPagination" class="pagination"></div>
 </div>
 
 <!-- ===== Daily Stats ===== -->
@@ -1235,7 +1242,7 @@ async function cloudSync(){
 
 function startCloudAutoSync(){
   if(cloudTimer) clearInterval(cloudTimer);
-  cloudTimer = setInterval(() => cloudSync(), 8000); // 8秒轮询，更快感知变更
+  cloudTimer = setInterval(() => cloudSync(), 30000); // 30秒轮询
 }
 
 async function shareRoom(){
@@ -1286,6 +1293,13 @@ let state = { orders: [], talents: [], mapping: {}, productMapping: {}, products
 let charts = {};
 let pendingMappings = {}; // 待保存的映射修改
 let serverStatus = null;
+// 分页状态（订单表 & 达人表）
+let _orderCurrentPage = 1;
+const ORDER_PAGE_SIZE = 50;
+let _orderSearchTimer = null;
+let _talentCurrentPage = 1;
+const TALENT_PAGE_SIZE = 50;
+let _talentSearchTimer = null;
 let currentUser = localStorage.getItem('vhs_user') || '';
 let currentUserRole = 'viewer'; // admin, manager, viewer
 let loginMode = 'login'; // login or register
@@ -1467,12 +1481,19 @@ async function loadData() {
       try {
         const ctrl = new AbortController();
         setTimeout(() => ctrl.abort(), 10000);
-        // 添加时间戳参数绕过 CDN 缓存，确保每次都拿到最新数据
-        const bustUrl = dataUrl + (dataUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
-        const res = await fetch(bustUrl, { signal: ctrl.signal, cache: 'no-cache' });
+        // 使用 no-cache 模式：浏览器通过 ETag/Last-Modified 做条件请求
+        // 文件未变时返回304（无body），避免重复下载1.4MB
+        const res = await fetch(dataUrl, { signal: ctrl.signal, cache: 'no-cache' });
         if (res.ok) {
           const data = await res.json();
           if (data.orders && data.orders.length > 0) {
+            // 数据未变则跳过合并/渲染（_meta.time 是 sync.js 每次写入时更新的时间戳）
+            const newMetaTime = data._meta?.time || '';
+            if(newMetaTime && newMetaTime === (state._meta?.time || '')){
+              githubDataLoaded = true;
+              cloudDataLoaded = true;
+              break; // 数据未变，跳过后续处理
+            }
             const apiOrders = data.orders.map(o => ({ ...o, source: 'api' }));
             const localOrders = (state.orders || []).filter(o => o.source !== 'api');
             state.orders = [...apiOrders, ...localOrders];
@@ -1888,14 +1909,22 @@ function renderDashboard(){
   const period = document.getElementById('dashPeriod').value;
   const orders = getFilteredOrders(period);
   const prevOrders = getPrevFilteredOrders(period);
-  const totalOrders = orders.length;
-  const totalSales = orders.reduce((s,o)=>s+getAmount(o),0);
-  const totalComm = orders.reduce((s,o)=>s+getCommission(o),0);
-  const totalService = orders.reduce((s,o)=>s+getServiceFee(o),0);
-  const activeTalents = new Set(orders.map(o=>o.talentName)).size;
-  const activeProducts = new Set(orders.map(o=>o.productId).filter(Boolean)).size;
-  const prevSales = prevOrders.reduce((s,o)=>s+getAmount(o),0);
-  const prevComm = prevOrders.reduce((s,o)=>s+getCommission(o),0);
+  // 单次遍历统计当前周期数据（替代原来6次独立的 reduce/map）
+  let totalOrders = 0, totalSales = 0, totalComm = 0, totalService = 0;
+  const talentSet = new Set(), productSet = new Set();
+  for(const o of orders){
+    totalOrders++;
+    totalSales += getAmount(o);
+    totalComm += getCommission(o);
+    totalService += getServiceFee(o);
+    if(o.talentName) talentSet.add(o.talentName);
+    if(o.productId) productSet.add(o.productId);
+  }
+  const activeTalents = talentSet.size;
+  const activeProducts = productSet.size;
+  // 单次遍历统计上期数据
+  let prevSales = 0, prevComm = 0;
+  for(const o of prevOrders){ prevSales += getAmount(o); prevComm += getCommission(o); }
   const prevOrdersN = prevOrders.length;
   const salesChange = pct(totalSales, prevSales);
   const commChange = pct(totalComm, prevComm);
@@ -2008,12 +2037,27 @@ function renderInsights(orders, prevOrders, period){
 }
 
 // ===================== Orders =====================
-function renderOrders(){
+function debouncedRenderOrders(){
+  clearTimeout(_orderSearchTimer);
+  _orderSearchTimer = setTimeout(() => { _orderCurrentPage = 1; renderOrders(); }, 300);
+}
+function debouncedRenderTalents(){
+  clearTimeout(_talentSearchTimer);
+  _talentSearchTimer = setTimeout(() => { _talentCurrentPage = 1; renderTalents(); }, 300);
+}
+function _orderGoPage(page){ _orderCurrentPage = page; renderOrders(false); }
+function _talentGoPage(page){ _talentCurrentPage = page; renderTalents(false); }
+
+function renderOrders(resetPage){
+  if(resetPage === undefined) resetPage = true;
+  if(resetPage){
+    _orderCurrentPage = 1;
+    pendingMappings = {};
+    pendingProductMappings = {};
+    const orderSaveBtn = document.getElementById('orderSaveMappingBtn');
+    if(orderSaveBtn) orderSaveBtn.style.display = 'none';
+  }
   populateFilters();
-  pendingMappings = {};
-  pendingProductMappings = {};
-  const orderSaveBtn = document.getElementById('orderSaveMappingBtn');
-  if(orderSaveBtn) orderSaveBtn.style.display = 'none';
   const search=(document.getElementById('orderSearch').value||'').toLowerCase();
   const fc=document.getElementById('filterChannel').value, fz=document.getElementById('filterZS').value;
   const period=document.getElementById('filterPeriod').value;
@@ -2029,13 +2073,33 @@ function renderOrders(){
     const tb=b.payTimeStr||b.date||'';
     return tb.localeCompare(ta);
   });
-  if(!orders.length){ document.getElementById('ordersTable').innerHTML=emptyHTML('暂无出单记录'); document.getElementById('ordersSummary').textContent=''; return; }
+
+  // 汇总（全量，不只是当前页）
+  const totalAmt=orders.reduce((s,o)=>s+getAmount(o),0);
+  const totalService=orders.reduce((s,o)=>s+getServiceFee(o),0);
+  document.getElementById('ordersSummary').innerHTML=`共 <b>${orders.length}</b> 条记录 | 合计销售额 <b>${fmtMoney(totalAmt)}</b> | 服务费 <b>${fmtMoney(totalService)}</b>`;
+
+  if(!orders.length){
+    document.getElementById('ordersTable').innerHTML=emptyHTML('暂无出单记录');
+    document.getElementById('ordersPagination').innerHTML='';
+    return;
+  }
+
+  // 分页：只渲染当前页
+  const totalPages = Math.ceil(orders.length / ORDER_PAGE_SIZE);
+  if(_orderCurrentPage > totalPages) _orderCurrentPage = totalPages;
+  if(_orderCurrentPage < 1) _orderCurrentPage = 1;
+  const pageStart = (_orderCurrentPage - 1) * ORDER_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + ORDER_PAGE_SIZE, orders.length);
+  const pageOrders = orders.slice(pageStart, pageEnd);
+
+  // 缓存全量订单索引用于 onchange 回调
+  window._orderRows = orders;
   const editable = canEdit();
   const channels=[...new Set([...(state.personnel?.channels||[]).map(p=>p.name), ...state.talents.map(t=>t.channel), ...Object.values(state.mapping).map(m=>m.channel)].filter(Boolean))];
   const zsList=[...new Set([...(state.personnel?.zhaoshangs||[]).map(p=>p.name), ...state.talents.map(t=>t.zhaoshang), ...Object.values(state.mapping).map(m=>m.zhaoshang)].filter(Boolean))];
-  // 缓存订单索引用于 onchange 回调
-  window._orderRows = orders;
-  document.getElementById('ordersTable').innerHTML=`<table><thead><tr><th>出单时间</th><th>达人</th><th>商品</th><th>渠道${editable?' ✏️':''}</th><th>招商${editable?' ✏️':''}</th><th class="text-r">订单数</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody>${orders.map((o,idx)=>{
+  document.getElementById('ordersTable').innerHTML=`<table><thead><tr><th>出单时间</th><th>达人</th><th>商品</th><th>渠道${editable?' ✏️':''}</th><th>招商${editable?' ✏️':''}</th><th class="text-r">订单数</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody>${pageOrders.map((o,localIdx)=>{
+    const idx = pageStart + localIdx; // 全局索引，用于 markOrderMappingChanged
     const sourceTag = o.source==='api' ? '<span class="tag tag-green">API</span>' : `<span class="tag tag-gray">手动${o.operator?' · '+esc(o.operator):''}</span>`;
     const statusTag = o.commissionStatus ? (o.commissionStatus==='已结算'?'<span class="tag tag-green">已结算</span>':o.commissionStatus==='未结算'?'<span class="tag tag-orange">未结算</span>':'<span class="tag tag-red">取消</span>') : '-';
     const prodImg = o.productImg ? `<img class="product-thumb" src="${esc(o.productImg)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt=""><div class="product-thumb-placeholder" style="display:none">📦</div>` : `<div class="product-thumb-placeholder">📦</div>`;
@@ -2054,9 +2118,19 @@ function renderOrders(){
       : `<span>${esc(o.date||'-')}</span>`;
     return `<tr><td>${timeCell}</td><td><b>${esc(o.talentName)}</b></td><td>${prodCell}</td><td>${chCell}</td><td>${zsCell}</td><td class="text-r">${getOrderCount(o)}</td><td class="text-r"><b>${fmtMoney(getAmount(o))}</b></td><td class="text-r">${getServiceFee(o)?fmtMoney(getServiceFee(o)):'-'}</td><td class="text-r">${getCommission(o)?fmtMoney(getCommission(o)):'-'}</td><td>${statusTag}</td><td>${sourceTag}</td><td>${o.source==='api'||!canEdit()?'-':`<button class="btn btn-outline btn-sm" onclick="openOrderModal('${o.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">删除</button>`}</td></tr>`;
   }).join('')}</tbody></table>`;
-  const totalAmt=orders.reduce((s,o)=>s+getAmount(o),0);
-  const totalService=orders.reduce((s,o)=>s+getServiceFee(o),0);
-  document.getElementById('ordersSummary').innerHTML=`共 <b>${orders.length}</b> 条记录 | 合计销售额 <b>${fmtMoney(totalAmt)}</b> | 服务费 <b>${fmtMoney(totalService)}</b>`;
+
+  // 分页控件
+  const pagEl = document.getElementById('ordersPagination');
+  if(totalPages > 1){
+    pagEl.innerHTML = `<button class="btn btn-outline btn-sm" onclick="_orderGoPage(${_orderCurrentPage-1})" ${_orderCurrentPage<=1?'disabled':''}>上一页</button>
+      <span class="page-info">第 ${_orderCurrentPage} / ${totalPages} 页（${pageStart+1}-${pageEnd} / ${orders.length} 条）</span>
+      <button class="btn btn-outline btn-sm" onclick="_orderGoPage(${_orderCurrentPage+1})" ${_orderCurrentPage>=totalPages?'disabled':''}>下一页</button>
+      <select class="input btn-sm" onchange="_orderGoPage(parseInt(this.value))" style="width:auto">
+        ${Array.from({length:Math.min(totalPages,200)},(_,i)=>`<option value="${i+1}" ${i+1===_orderCurrentPage?'selected':''}>${i+1}</option>`).join('')}
+      </select>`;
+  } else {
+    pagEl.innerHTML = '';
+  }
 }
 
 function markOrderMappingChanged(idx, field, value){
@@ -2194,7 +2268,9 @@ function saveOrder(){
 function deleteOrder(id){ if(!confirm('确认删除这条出单记录？')) return; state.orders=state.orders.filter(o=>o.id!==id); saveLocalState(); debouncedCloudUpload(); renderOrders(); toast('已删除','success'); }
 
 // ===================== Talents (Enhanced with inline mapping) =====================
-function renderTalents(){
+function renderTalents(resetPage){
+  if(resetPage === undefined) resetPage = true;
+  if(resetPage) _talentCurrentPage = 1;
   const search=(document.getElementById('talentSearch').value||'').toLowerCase();
   const fa=document.getElementById('talentFilterAssign').value;
   let talents=state.talents.filter(t=>!search||t.name.toLowerCase().includes(search));
@@ -2207,9 +2283,8 @@ function renderTalents(){
     return !info.displayChannel||!info.displayZS;
   });
   talents.sort((a,b)=>a.name.localeCompare(b.name,'zh'));
-  pendingMappings = {};
-  document.getElementById('saveMappingBtn').style.display = 'none';
-  if(!talents.length){ document.getElementById('talentsTable').innerHTML=emptyHTML('暂无达人'); document.getElementById('talentHint').textContent=''; return; }
+  if(resetPage){ pendingMappings = {}; document.getElementById('saveMappingBtn').style.display = 'none'; }
+  if(!talents.length){ document.getElementById('talentsTable').innerHTML=emptyHTML('暂无达人'); document.getElementById('talentHint').textContent=''; document.getElementById('talentsPagination').innerHTML=''; return; }
   const stats={};
   state.orders.forEach(o=>{ const n=o.talentName; if(!stats[n]) stats[n]={count:0,amount:0,service:0,comm:0}; stats[n].count++; stats[n].amount+=getAmount(o); stats[n].service+=getServiceFee(o); stats[n].comm+=getCommission(o); });
 
@@ -2244,9 +2319,17 @@ function renderTalents(){
     return `<span class="tag ${tagClass}">${esc(val)||'-'}</span>`;
   }
 
+  // 分页
+  const totalPages = Math.ceil(talents.length / TALENT_PAGE_SIZE);
+  if(_talentCurrentPage > totalPages) _talentCurrentPage = totalPages;
+  if(_talentCurrentPage < 1) _talentCurrentPage = 1;
+  const pageStart = (_talentCurrentPage - 1) * TALENT_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + TALENT_PAGE_SIZE, talents.length);
+  const pageTalents = talents.slice(pageStart, pageEnd);
+
   document.getElementById('talentsTable').innerHTML=`<table><thead><tr>
     <th>达人名称</th><th>渠道${editable?'（可编辑）':''}</th><th>招商${editable?'（可编辑）':''}</th><th>类型</th><th>出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>操作</th>
-  </tr></thead><tbody>${talents.map(t=>{
+  </tr></thead><tbody>${pageTalents.map(t=>{
     const s=stats[t.name]||{count:0,amount:0,service:0,comm:0};
     const info = getTalentDisplayInfo(t.name);
     const typeTag = t.talentType==='finder'?'<span class="tag tag-blue">视频号</span>':t.talentType==='talent'?'<span class="tag tag-green">带货者</span>':t.talentType==='sharer'?'<span class="tag tag-orange">推客</span>':'<span class="tag tag-gray">手动</span>';
@@ -2264,9 +2347,23 @@ function renderTalents(){
       <td>${editable?`<button class="btn btn-outline btn-sm" onclick="openProductAssign('${esc(t.name)}')">📦 商品分配</button> <button class="btn btn-outline btn-sm" onclick="openTalentModal('${t.id||''}')">详情</button>`:'-'}</td>
     </tr>`;
   }).join('')}</tbody></table>`;
-  document.getElementById('talentHint').textContent = editable 
+  document.getElementById('talentHint').textContent = editable
     ? (Server.connected ? '💡 直接在表格中修改渠道和招商（达人级），或点击「商品分配」按商品单独指定。商品分配后会自动显示在渠道/招商列' : '💡 修改渠道和招商后点击「保存渠道/招商修改」按钮保存')
     : '💡 当前为只读模式，仅管理人员可修改渠道和招商分配';
+
+  // 分页控件
+  const pagEl = document.getElementById('talentsPagination');
+  if(!pagEl) return;
+  if(totalPages > 1){
+    pagEl.innerHTML = `<button class="btn btn-outline btn-sm" onclick="_talentGoPage(${_talentCurrentPage-1})" ${_talentCurrentPage<=1?'disabled':''}>上一页</button>
+      <span class="page-info">第 ${_talentCurrentPage} / ${totalPages} 页（${pageStart+1}-${pageEnd} / ${talents.length} 条）</span>
+      <button class="btn btn-outline btn-sm" onclick="_talentGoPage(${_talentCurrentPage+1})" ${_talentCurrentPage>=totalPages?'disabled':''}>下一页</button>
+      <select class="input btn-sm" onchange="_talentGoPage(parseInt(this.value))" style="width:auto">
+        ${Array.from({length:Math.min(totalPages,200)},(_,i)=>`<option value="${i+1}" ${i+1===_talentCurrentPage?'selected':''}>${i+1}</option>`).join('')}
+      </select>`;
+  } else {
+    pagEl.innerHTML = '';
+  }
 }
 
 function markMappingChanged(talentName, field, value){
@@ -3422,7 +3519,7 @@ async function triggerCloudSync(){
         const poll = setInterval(async () => {
           pollCount++;
           if(pollCount > 40){ clearInterval(poll); return; } // 最多等10分钟
-          await loadCloudData();
+          await loadData();
           const metaTime = state._meta?.time;
           if(metaTime){
             const ageMin = (Date.now() - new Date(metaTime).getTime()) / 60000;
@@ -3432,7 +3529,7 @@ async function triggerCloudSync(){
               updateConnectionStatus();
             }
           }
-        }, 15000); // 每15秒检查一次
+        }, 30000); // 每30秒检查一次（loadData内部用条件请求，数据未变时开销极小）
       }, 30000);
     } else {
       let errMsg = '触发失败: ' + resp.status;
@@ -3656,12 +3753,12 @@ async function init(){
     // 常规刷新：每5分钟重载一次获取最新数据
     setInterval(() => { window.location.reload(); }, 300000);
   } else if(isCloudMode){
-    // 云端模式：定期重新加载云端数据（每5分钟），让公司电脑也能自动看到最新数据
+    // 云端模式：定期重新加载云端数据（每5分钟）
+    // loadData 内部已用 no-cache + _meta.time 判断，数据未变时只发一个轻量条件请求(304)，不会下载/解析1.4MB
     setInterval(async () => {
       try {
         const prevCount = state.orders?.length || 0;
         const prevMetaTime = state._meta?.time || '';
-        githubDataLoaded = false;
         await loadData();
         await updateConnectionStatus();
         const newCount = state.orders?.length || 0;
@@ -3690,7 +3787,7 @@ async function init(){
           connectSSE();
         }
       }
-    }, 30000); // 云端模式下降低检查频率
+    }, 60000); // 云端模式下降低检查频率
   } else {
     // 离线模式下定期检查服务是否启动
     setInterval(async () => {
@@ -3706,7 +3803,7 @@ async function init(){
           connectSSE();
         }
       }
-    }, 10000);
+    }, 30000);
   }
   renderDashboard();
 }
@@ -3737,7 +3834,7 @@ init();
       .catch(function(){});
   }
   checkUpdate();
-  setInterval(checkUpdate,15000);
+  setInterval(checkUpdate,60000);
 })();
 </script>
 </body>
