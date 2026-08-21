@@ -2015,9 +2015,9 @@ function renderTalentRankTable(orders){
   const arr=Object.values(map).sort((a,b)=>b.amount-a.amount).slice(0,10);
   const max=arr[0]?.amount||1;
   if(!arr.length){ document.getElementById('talentRankTable').innerHTML=emptyHTML('暂无出单数据'); return; }
-  document.getElementById('talentRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>销售额</th><th>达人</th><th>渠道</th><th>出单</th><th>商品数</th><th>服务费</th><th>占比</th></tr></thead><tbody>${arr.map((t,i)=>{
+  document.getElementById('talentRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>达人</th><th>渠道</th><th>销售额</th><th>出单</th><th>商品数</th><th>服务费</th><th>占比</th></tr></thead><tbody>${arr.map((t,i)=>{
     const r=i<3?`r${i+1}`:'rn'; const ratio=(t.amount/max*100).toFixed(0);
-    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td><b>${esc(t.name)}</b></td><td><span class="tag tag-blue">${esc(t.channel||'-')}</span></td><td>${t.count}单</td><td>${t.products.size}</td><td class="text-r">${fmtMoney(t.service)}</td><td><span class="mini-bar" style="width:${ratio*0.6}px"></span>${ratio}%</td></tr>`;
+    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td><span class="tag tag-blue">${esc(t.channel||'-')}</span></td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td>${t.count}单</td><td>${t.products.size}</td><td class="text-r">${fmtMoney(t.service)}</td><td><span class="mini-bar" style="width:${ratio*0.6}px"></span>${ratio}%</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
