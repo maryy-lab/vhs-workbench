@@ -1206,6 +1206,8 @@ function mergeCloudData(cloudData){
       changed = true;
     }
   }
+  // 清理商品级映射中与达人级重复/为空的冗余字段（显示不变，但保证达人级分配能正常生效）
+  if(cleanupRedundantProductMappings()) changed = true;
   saveLocalState();
   return changed;
 }
@@ -1363,7 +1365,9 @@ function getTalentDisplayInfo(talentName){
     displayChannel = productChannels.size === 1 ? [...productChannels][0] : '已分配';
     channelFromProduct = true;
   } else {
-    displayChannel = state.mapping[talentName]?.channel || state.talents.find(t=>t.name===talentName)?.channel || '';
+    // 达人级映射存在时以其为准（含空值=已清空），不存在时才回落到达人记录
+    const tmCh = state.mapping[talentName]?.channel;
+    displayChannel = tmCh !== undefined ? tmCh : (state.talents.find(t=>t.name===talentName)?.channel || '');
   }
 
   let displayZS = '', zsFromProduct = false;
@@ -1371,7 +1375,8 @@ function getTalentDisplayInfo(talentName){
     displayZS = productZhaoshangs.size === 1 ? [...productZhaoshangs][0] : '已分配';
     zsFromProduct = true;
   } else {
-    displayZS = state.mapping[talentName]?.zhaoshang || state.talents.find(t=>t.name===talentName)?.zhaoshang || '';
+    const tmZs = state.mapping[talentName]?.zhaoshang;
+    displayZS = tmZs !== undefined ? tmZs : (state.talents.find(t=>t.name===talentName)?.zhaoshang || '');
   }
 
   return { displayChannel, displayZS, channelFromProduct, zsFromProduct, hasProductMapping };
@@ -1384,21 +1389,45 @@ function getCommission(o){ return Number(o.commission)||Number(o.talentCommissio
 function getCommissionRate(o){ return Number(o.commissionRate)||Number(o.talentCommissionRatio)||0; }
 function getProduct(o){ return o.product||o.productTitle||''; }
 function getOrderCount(o){ return Number(o.orderCount)||Number(o.productCount)||1; }
+function isApiOrder(o){ return !!(o.orderId || o.source === 'api'); }
 function getChannel(o){
-  if(o.channel) return o.channel;
-  // 先查产品级映射（达人+商品）
+  // 优先级：商品级映射 > 达人级映射 > 手动订单自带字段
+  // 注意：API 同步订单上的 channel 是同步时烘焙的快照，不作为分配依据（否则会遮蔽用户的分配）
   const pkey = (o.talentName||'') + '|' + (o.productId||'');
   if(o.productId && state.productMapping?.[pkey]?.channel) return state.productMapping[pkey].channel;
-  // 再查达人级映射
-  if(state.mapping[o.talentName]?.channel) return state.mapping[o.talentName].channel;
+  const tm = state.mapping[o.talentName];
+  if(tm && tm.channel) return tm.channel;
+  if(!isApiOrder(o) && tm === undefined && o.channel) return o.channel;
   return '';
 }
 function getZhaoshang(o){
-  if(o.zhaoshang) return o.zhaoshang;
+  // 优先级：商品级映射 > 达人级映射 > 手动订单自带字段
   const pkey = (o.talentName||'') + '|' + (o.productId||'');
   if(o.productId && state.productMapping?.[pkey]?.zhaoshang) return state.productMapping[pkey].zhaoshang;
-  if(state.mapping[o.talentName]?.zhaoshang) return state.mapping[o.talentName].zhaoshang;
+  const tm = state.mapping[o.talentName];
+  if(tm && tm.zhaoshang) return tm.zhaoshang;
+  if(!isApiOrder(o) && tm === undefined && o.zhaoshang) return o.zhaoshang;
   return '';
+}
+
+// 清理商品级映射中的冗余字段：空值或与达人级值完全相同的字段
+// （显示结果不变——会向下回落到达人级取到同样的值；但达人级重新分配时能正常生效，不被旧值遮蔽）
+function cleanupRedundantProductMappings(){
+  if(!state.productMapping) return false;
+  let changed = false;
+  for(const pkey of Object.keys(state.productMapping)){
+    const pm = state.productMapping[pkey];
+    if(!pm || typeof pm !== 'object') continue;
+    const talentName = pkey.split('|')[0];
+    const tm = state.mapping?.[talentName];
+    ['channel','zhaoshang'].forEach(f => {
+      if(pm[f] !== undefined && (!pm[f] || (tm && pm[f] === tm[f]))){
+        delete pm[f]; changed = true;
+      }
+    });
+    if(Object.keys(pm).length === 0) delete state.productMapping[pkey];
+  }
+  return changed;
 }
 
 // ===================== Data Loading =====================
@@ -2140,15 +2169,9 @@ function markOrderMappingChanged(idx, field, value){
   const productId = o.productId || '';
   if(productId){
     const pkey = talentName + '|' + productId;
-    if(!pendingProductMappings[pkey]) {
-      // 预填充已有的渠道/招商值，防止分配一个时另一个被清空
-      const existing = state.productMapping?.[pkey] || {};
-      const talentMap = state.mapping?.[talentName] || {};
-      pendingProductMappings[pkey] = {
-        channel: existing.channel || talentMap.channel || '',
-        zhaoshang: existing.zhaoshang || talentMap.zhaoshang || ''
-      };
-    }
+    // 只记录被修改的字段；保存时按字段合并（saveOrderMappings），未修改字段不会被写入
+    // 不再用达人级值预填充——那会把旧值固化成商品级映射，遮蔽之后达人级的重新分配
+    if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = {};
     pendingProductMappings[pkey][field] = value;
   } else {
     if(!pendingMappings[talentName]) pendingMappings[talentName] = { channel: state.mapping[talentName]?.channel || '', zhaoshang: state.mapping[talentName]?.zhaoshang || '' };
@@ -2469,15 +2492,8 @@ function openProductAssign(talentName){
 
 function markProductMappingChanged(talentName, productId, field, value){
   const pkey = talentName + '|' + productId;
-  if(!pendingProductMappings[pkey]) {
-    // 预填充已有的渠道/招商值，防止分配一个时另一个被清空
-    const existing = state.productMapping?.[pkey] || {};
-    const talentMap = state.mapping?.[talentName] || {};
-    pendingProductMappings[pkey] = {
-      channel: existing.channel || talentMap.channel || '',
-      zhaoshang: existing.zhaoshang || talentMap.zhaoshang || ''
-    };
-  }
+  // 只记录被修改的字段；保存时按字段合并，未修改字段不会被写入（防止旧值固化成商品级映射）
+  if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = {};
   pendingProductMappings[pkey][field] = value;
 }
 
@@ -3199,15 +3215,8 @@ function closeProductModal(){
 
 function markProductMappingChanged(talentName, productId, field, value){
   const pkey = talentName + '|' + productId;
-  if(!pendingProductMappings[pkey]) {
-    // 预填充已有的渠道/招商值，防止分配一个时另一个被清空
-    const existing = state.productMapping?.[pkey] || {};
-    const talentMap = state.mapping?.[talentName] || {};
-    pendingProductMappings[pkey] = {
-      channel: existing.channel || talentMap.channel || '',
-      zhaoshang: existing.zhaoshang || talentMap.zhaoshang || ''
-    };
-  }
+  // 只记录被修改的字段；保存时按字段合并，未修改字段不会被写入（防止旧值固化成商品级映射）
+  if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = {};
   pendingProductMappings[pkey][field] = value;
   // 所有人都可以编辑，始终显示保存按钮
   const btn = document.getElementById('saveProductMappingBtn');
@@ -3736,6 +3745,8 @@ async function init(){
     connectSSE();
   }
   await loadData();
+  // 加载后清理商品级映射冗余字段（一次性数据修正，幂等）
+  if(cleanupRedundantProductMappings()) saveLocalState();
   // 数据加载后重新更新连接状态（GitHub云端数据加载成功后显示"云端数据模式"）
   if(!Server.connected){
     await updateConnectionStatus();
