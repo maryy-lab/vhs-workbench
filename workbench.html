@@ -1386,7 +1386,7 @@ function getTalentDisplayInfo(talentName){
 
 // 统一字段获取（兼容API同步和手动录入）
 function getAmount(o){ return Number(o.amount)||Number(o.salesAmount)||0; }
-function getServiceFee(o){ return Number(o.serviceFee)||Number(o.serviceAmount)||0; }
+function getServiceFee(o){ if(o.commissionStatus==='取消结算') return 0; return Number(o.serviceFee)||Number(o.serviceAmount)||0; }
 function getCommission(o){ return Number(o.commission)||Number(o.talentCommission)||0; }
 function getCommissionRate(o){ return Number(o.commissionRate)||Number(o.talentCommissionRatio)||0; }
 function getProduct(o){ return o.product||o.productTitle||''; }
@@ -2235,7 +2235,7 @@ function openOrderModal(id){
     document.getElementById('oProductImg').value=o.productImg||'';
     document.getElementById('oCount').value=o.orderCount||'';
     document.getElementById('oAmount').value=getAmount(o)||'';
-    document.getElementById('oServiceFee').value=getServiceFee(o)||'';
+    document.getElementById('oServiceFee').value=(Number(o.serviceFee)||Number(o.serviceAmount)||0)||'';
     document.getElementById('oRate').value=getCommissionRate(o)||'';
     document.getElementById('oCommission').value=getCommission(o)||'';
     document.getElementById('oNote').value=o.note||'';
