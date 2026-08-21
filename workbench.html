@@ -388,7 +388,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <select class="input" id="dailyMode" onchange="renderDaily()" style="min-width:120px">
       <option value="byDate">按日期查看</option>
       <option value="byTalent">按达人汇总</option>
-      <option value="byPerson">按人员查看（招商业绩）</option>
+      <option value="byPerson">按人员查看（招商+渠道业绩）</option>
     </select>
     <button class="btn btn-outline btn-sm" onclick="document.getElementById('dailyStart').value='';document.getElementById('dailyEnd').value='';renderDaily()">清除范围</button>
   </div>
@@ -2522,22 +2522,34 @@ function populateDailyUserFilter(){
   const sel = document.getElementById('dailyUserFilter');
   if(!sel) return;
   const isManager = canEdit();
-  // 人员 = 招商人员管理里的人 + 订单里实际出现过的招商名
-  const zsSet = new Set();
+  // 关键修复：重建选项前先记住用户当前选中的值，重建后优先恢复它
+  // （之前用 dataset.prev 恢复，但 onchange 时 dataset.prev 还是旧值，导致刚选的人被弹回）
+  const curVal = sel.value || '';
+  // 人员 = 人员管理里的渠道/招商人员 + 订单里实际出现过的渠道/招商名
+  const chSet = new Set(), zsSet = new Set();
+  (state.personnel && state.personnel.channels || []).forEach(p => { if(p && p.name) chSet.add(p.name); });
   (state.personnel && state.personnel.zhaoshangs || []).forEach(p => { if(p && p.name) zsSet.add(p.name); });
-  state.orders.forEach(o => { const z = getZhaoshang(o); if(z && z !== '未分配') zsSet.add(z); });
+  state.orders.forEach(o => {
+    const c = getChannel(o); if(c && c !== '未分配') chSet.add(c);
+    const z = getZhaoshang(o); if(z && z !== '未分配') zsSet.add(z);
+  });
+  // 同名的人如果既是渠道又是招商，从招商列表里去掉（渠道组优先展示，避免重复行）
+  zsSet.forEach(z => { if(chSet.has(z)) zsSet.delete(z); });
+  const chList = [...chSet].sort((a,b)=>a.localeCompare(b,'zh'));
   const zsList = [...zsSet].sort((a,b)=>a.localeCompare(b,'zh'));
   let html = '';
   if(isManager){
     html += '<option value="all">🏢 公司整体</option>';
     html += '<option value="me">👤 我的数据</option>';
-    zsList.forEach(z => { if(z !== currentUser) html += `<option value="${esc(z)}">💼 ${esc(z)}</option>`; });
+    if(chList.length) html += '<optgroup label="📡 渠道人员">' + chList.map(c => `<option value="ch:${esc(c)}">📡 ${esc(c)}</option>`).join('') + '</optgroup>';
+    if(zsList.length) html += '<optgroup label="💼 招商人员">' + zsList.filter(z=>z!==currentUser).map(z => `<option value="zs:${esc(z)}">💼 ${esc(z)}</option>`).join('') + '</optgroup>';
   } else {
     html = '<option value="me" selected>👤 我的数据</option>';
   }
   sel.innerHTML = html;
-  const prev = sel.dataset.prev || (isManager ? 'all' : 'me');
+  const prev = curVal || sel.dataset.prev || (isManager ? 'all' : 'me');
   if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
+  else if(curVal === 'me' || sel.dataset.prev === 'me') sel.value = 'me';
   // Show/hide "byPerson" mode for managers only
   const modeSel = document.getElementById('dailyMode');
   if(modeSel){
@@ -2554,10 +2566,20 @@ function getDailyFilteredOrders(){
   if(sel) sel.dataset.prev = userVal;
   let orders = [...state.orders];
   if(userVal === 'me'){
-    // 我的数据 = 招商分配给我的订单 + 我手动录入的订单
-    orders = orders.filter(o => getZhaoshang(o) === currentUser || o.operator === currentUser);
-  } else if(userVal !== 'all'){
+    // 我的数据 = 渠道或招商分配给我的订单 + 我手动录入的订单
+    orders = orders.filter(o => getZhaoshang(o) === currentUser || getChannel(o) === currentUser || o.operator === currentUser);
+  } else if(userVal === 'all'){
+    // 公司整体：不筛选
+  } else if(userVal.indexOf('ch:') === 0){
+    // 按渠道人员筛选
+    const n = userVal.slice(3);
+    orders = orders.filter(o => getChannel(o) === n);
+  } else if(userVal.indexOf('zs:') === 0){
     // 按招商人员筛选
+    const n = userVal.slice(3);
+    orders = orders.filter(o => getZhaoshang(o) === n);
+  } else if(userVal){
+    // 兼容旧值（无前缀的招商名）
     orders = orders.filter(o => getZhaoshang(o) === userVal);
   }
   const startVal = document.getElementById('dailyStart').value;
@@ -2604,30 +2626,48 @@ function renderDaily(){
   if(!orders.length){ document.getElementById('dailyTable').innerHTML = emptyHTML('所选日期暂无出单数据'); return; }
 
   if(mode === 'byPerson' && canEdit()){
-    // 按人员查看：每行一个招商人员（按达人/商品的招商分配归属），按日期展开
+    // 按人员查看：渠道人员和招商人员都参与统计（按达人/商品的分配归属），按日期展开
+    const filterVal = (document.getElementById('dailyUserFilter')||{}).value || 'all';
     const personMap = {};
-    orders.forEach(o => {
-      const p = getZhaoshang(o) || '(未分配)';
-      if(!personMap[p]) personMap[p] = { name:p, days:{} };
+    const addOrder = (role, name, o) => {
+      const pName = name || '(未分配)';
+      const key = role + '|' + pName;
+      if(!personMap[key]) personMap[key] = { name:pName, role, days:{} };
       const d = o.date;
-      if(!personMap[p].days[d]) personMap[p].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0, talents:new Set() };
-      personMap[p].days[d].count++;
-      personMap[p].days[d].amount += getAmount(o);
-      personMap[p].days[d].service += getServiceFee(o);
-      personMap[p].days[d].comm += getCommission(o);
-      personMap[p].days[d].talents.add(o.talentName);
+      if(!personMap[key].days[d]) personMap[key].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0, talents:new Set() };
+      personMap[key].days[d].count++;
+      personMap[key].days[d].amount += getAmount(o);
+      personMap[key].days[d].service += getServiceFee(o);
+      personMap[key].days[d].comm += getCommission(o);
+      personMap[key].days[d].talents.add(o.talentName);
       const s = getServiceFeeByStatus(o);
-      personMap[p].days[d].settled += s.settled;
-      personMap[p].days[d].unsettled += s.unsettled;
-      personMap[p].days[d].cancelled += s.cancelled;
-      personMap[p].days[d].cancelledCnt += s.cancelledCnt;
+      personMap[key].days[d].settled += s.settled;
+      personMap[key].days[d].unsettled += s.unsettled;
+      personMap[key].days[d].cancelled += s.cancelled;
+      personMap[key].days[d].cancelledCnt += s.cancelledCnt;
+    };
+    orders.forEach(o => {
+      const zs = getZhaoshang(o), ch = getChannel(o);
+      if(filterVal.indexOf('ch:') === 0){
+        // 已锁定某个渠道人员，只统计该人的渠道业绩
+        if(ch === filterVal.slice(3)) addOrder('渠道', ch, o);
+      } else if(filterVal.indexOf('zs:') === 0){
+        // 已锁定某个招商人员，只统计该人的招商业绩
+        if(zs === filterVal.slice(3)) addOrder('招商', zs, o);
+      } else {
+        // 公司整体/我的数据：渠道、招商两条线都展示（同一订单会分别计入渠道和招商两人的业绩）
+        addOrder('招商', zs, o);
+        addOrder('渠道', ch, o);
+      }
     });
+    const roleRank = { '渠道':0, '招商':1 };
     const persons = Object.values(personMap).sort((a,b)=>{
       const ba=Object.values(b.days).reduce((s,d)=>s+d.amount,0);
       const aa=Object.values(a.days).reduce((s,d)=>s+d.amount,0);
-      return ba-aa;
+      return ba-aa || (roleRank[a.role]||9)-(roleRank[b.role]||9);
     });
-    let html = `<table><thead><tr><th>招商人员</th><th>日期</th><th class="text-r">出单</th><th class="text-r">达人</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>`;
+    const roleTag = r => r === '渠道' ? '<span class="tag tag-blue">渠道</span>' : '<span class="tag tag-purple">招商</span>';
+    let html = `<table><thead><tr><th>人员</th><th>类型</th><th>日期</th><th class="text-r">出单</th><th class="text-r">达人</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>`;
     persons.forEach(p => {
       const days = Object.entries(p.days).sort((a,b)=>b[0].localeCompare(a[0]));
       const tCount = days.reduce((s,[,d])=>s+d.count,0);
@@ -2640,12 +2680,12 @@ function renderDaily(){
       const tTalents = new Set(); days.forEach(([,d])=>d.talents.forEach(t=>tTalents.add(t)));
       days.forEach(([date, d], i) => {
         html += `<tr${i===0?'':' style="border-top:1px solid #F3F4F6"'}>
-          ${i===0?`<td rowspan="${days.length}"><b>${esc(p.name)}</b></td>`:''}
+          ${i===0?`<td rowspan="${days.length}"><b>${esc(p.name)}</b></td><td rowspan="${days.length}">${roleTag(p.role)}</td>`:''}
           <td>${date}</td><td class="text-r">${d.count}单</td><td class="text-r">${d.talents.size}</td><td class="text-r"><b>${fmtMoney(d.amount)}</b></td><td class="text-r">${d.service?fmtMoney(d.service):'-'}</td><td class="text-r" style="color:#10B981">${d.settled?fmtMoney(d.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${d.unsettled?fmtMoney(d.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${d.cancelledCnt?d.cancelledCnt+'单':'-'}</td><td class="text-r">${d.comm?fmtMoney(d.comm):'-'}</td></tr>`;
       });
-      html += `<tr style="background:#F9FAFB;font-weight:600"><td>小计</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${tTalents.size}</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(tSettled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(tUnsettled)}</td><td class="text-r" style="color:#EF4444">${tCancelledCnt}单</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
+      html += `<tr style="background:#F9FAFB;font-weight:600"><td>${esc(p.name)}</td><td>${roleTag(p.role)}</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${tTalents.size}</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(tSettled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(tUnsettled)}</td><td class="text-r" style="color:#EF4444">${tCancelledCnt}单</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
     });
-    html += `<tr style="background:#EEF2FF;font-weight:700"><td>总计</td><td>-</td><td class="text-r">${orders.length}单</td><td class="text-r">${talentSet.size}</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${sf.cancelledCnt}单</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
+    html += `<tr style="background:#EEF2FF;font-weight:700"><td colspan="3">总计（订单不重复计数）</td><td class="text-r">${orders.length}单</td><td class="text-r">${talentSet.size}</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${sf.cancelledCnt}单</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
     html += `</tbody></table>`;
     document.getElementById('dailyTable').innerHTML = html;
   } else if(mode === 'byTalent'){
