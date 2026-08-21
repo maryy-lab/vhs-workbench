@@ -347,12 +347,11 @@ function extractTalents(orders, mapping) {
 }
 
 // ============ 应用映射 ============
+// 已废弃：不再把达人级 channel/zhaoshang 烘焙进订单字段。
+// 前端 getChannel/getZhaoshang 的读取优先级为：商品级映射 > 达人级映射 > 手动订单字段，
+// 订单上烘焙的快照会遮蔽用户后续的分配修改（造成"分配不生效/自动变成另一个人"）。
 function applyMapping(orders, mapping) {
-  return orders.map(o => ({
-    ...o,
-    channel: mapping[o.talentName]?.channel || '',
-    zhaoshang: mapping[o.talentName]?.zhaoshang || ''
-  }));
+  return orders;
 }
 
 // ============ 从仓库已有的 data.json 读取配置和旧订单（保留用户在云端做的修改 + 历史订单） ============
