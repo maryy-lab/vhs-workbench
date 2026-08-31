@@ -353,6 +353,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <select class="input" id="filterChannel" onchange="renderOrders()" style="min-width:120px"><option value="">全部渠道</option></select>
     <select class="input" id="filterZS" onchange="renderOrders()" style="min-width:120px"><option value="">全部招商</option></select>
     <select class="input" id="filterPeriod" onchange="renderOrders()" style="min-width:100px"><option value="all">全部时间</option><option value="1">今日</option><option value="7">近7天</option><option value="30">近30天</option></select>
+    <select class="input" id="orderArchive" onchange="onOrderArchiveChange()" style="min-width:150px"><option value="current">📊 当前数据(近90天)</option></select>
     <select class="input" id="filterAssign" onchange="renderOrders()" style="min-width:100px"><option value="">分配状态</option><option value="assigned">已分配</option><option value="unassigned">未分配</option></select>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="ordersTable" style="max-height:600px;overflow-y:auto"></div></div>
@@ -1333,6 +1334,62 @@ function getFilteredOrders(periodSel){
   const cutoff=daysAgo(days);
   return state.orders.filter(o=>o.date>=cutoff);
 }
+
+// ===== 历史归档（data.json 之外的按月永久存档，云端 archive/YYYY-MM.json） =====
+const ARCHIVE_BASE_URLS = [
+  'archive/',                                                                                 // 同源相对路径（GitHub Pages最可靠）
+  'https://cdn.jsdelivr.net/gh/maryy-lab/vhs-workbench@main/cloud-sync/archive/',             // jsDelivr CDN备用
+  'https://raw.githubusercontent.com/maryy-lab/vhs-workbench/main/cloud-sync/archive/'        // raw备用
+];
+const archiveCache = {}; // month -> orders[]
+async function loadArchiveIndex(){
+  try{
+    const ctrl = new AbortController();
+    setTimeout(()=>ctrl.abort(), 10000);
+    const res = await fetch('archive/index.json', { signal: ctrl.signal, cache: 'no-cache' });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const idx = await res.json();
+    const sel = document.getElementById('orderArchive');
+    if(!sel) return;
+    (idx.months||[]).forEach(m=>{
+      if(sel.querySelector(`option[value="${m}"]`)) return;
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = `📁 ${m.replace('-','年')}月（归档）`;
+      sel.appendChild(opt);
+    });
+  }catch(e){ console.log('[archive] 索引加载失败:', e.message); }
+}
+async function loadArchiveMonth(month){
+  if(archiveCache[month]){ renderOrders(); return; }
+  const ta = document.getElementById('ordersTable');
+  if(ta) ta.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted)">⏳ 正在加载归档数据...</div>';
+  for(const base of ARCHIVE_BASE_URLS){
+    try{
+      const ctrl = new AbortController();
+      setTimeout(()=>ctrl.abort(), 15000);
+      const res = await fetch(base+month+'.json', { signal: ctrl.signal, cache: 'no-cache' });
+      if(!res.ok) continue;
+      const data = await res.json();
+      archiveCache[month] = (data.orders||[]).map(o=>({ ...o, source: 'archive' }));
+      renderOrders();
+      return;
+    }catch(e){ console.log('[archive]', month, '从', base, '加载失败:', e.message); }
+  }
+  toast('⚠️ 归档数据加载失败','error');
+  const sel = document.getElementById('orderArchive');
+  if(sel) sel.value = 'current';
+  renderOrders();
+}
+function onOrderArchiveChange(){
+  const m = document.getElementById('orderArchive').value;
+  if(m==='current'){ renderOrders(); return; }
+  loadArchiveMonth(m);
+}
+function getArchiveMonthLabel(m){
+  const mm = String(m).replace('-','年');
+  return mm ? mm+'月' : m;
+}
 function getPrevFilteredOrders(periodSel){
   if(periodSel==='today') return state.orders.filter(o=>o.date===daysAgo(1));
   if(periodSel==='yesterday') return state.orders.filter(o=>o.date===daysAgo(2));
@@ -2089,11 +2146,14 @@ function renderOrders(resetPage){
     if(orderSaveBtn) orderSaveBtn.style.display = 'none';
   }
   populateFilters();
+  const archSel = document.getElementById('orderArchive');
+  const archMonth = archSel ? archSel.value : 'current';
+  const archMode = archMonth !== 'current';
   const search=(document.getElementById('orderSearch').value||'').toLowerCase();
   const fc=document.getElementById('filterChannel').value, fz=document.getElementById('filterZS').value;
   const period=document.getElementById('filterPeriod').value;
   const fa=document.getElementById('filterAssign').value;
-  let orders=getFilteredOrders(period);
+  let orders = archMode ? (archiveCache[archMonth]||[]).slice() : getFilteredOrders(period);
   if(search) orders=orders.filter(o=>(o.talentName||'').toLowerCase().includes(search)||(getProduct(o)).toLowerCase().includes(search));
   if(fc) orders=orders.filter(o=>getChannel(o)===fc);
   if(fz) orders=orders.filter(o=>getZhaoshang(o)===fz);
@@ -2108,7 +2168,8 @@ function renderOrders(resetPage){
   // 汇总（全量，不只是当前页）
   const totalAmt=orders.reduce((s,o)=>s+getAmount(o),0);
   const totalService=orders.reduce((s,o)=>s+getServiceFee(o),0);
-  document.getElementById('ordersSummary').innerHTML=`共 <b>${orders.length}</b> 条记录 | 合计销售额 <b>${fmtMoney(totalAmt)}</b> | 服务费 <b>${fmtMoney(totalService)}</b>`;
+  const sumPrefix = archMode ? `📁 ${getArchiveMonthLabel(archMonth)}归档 ` : '';
+  document.getElementById('ordersSummary').innerHTML=`${sumPrefix}共 <b>${orders.length}</b> 条记录 | 合计销售额 <b>${fmtMoney(totalAmt)}</b> | 服务费 <b>${fmtMoney(totalService)}</b>`;
 
   if(!orders.length){
     document.getElementById('ordersTable').innerHTML=emptyHTML('暂无出单记录');
@@ -2126,12 +2187,12 @@ function renderOrders(resetPage){
 
   // 缓存全量订单索引用于 onchange 回调
   window._orderRows = orders;
-  const editable = canEdit();
+  const editable = canEdit() && !archMode; // 归档数据为历史只读，不开放编辑
   const channels=[...new Set([...(state.personnel?.channels||[]).map(p=>p.name), ...state.talents.map(t=>t.channel), ...Object.values(state.mapping).map(m=>m.channel)].filter(Boolean))];
   const zsList=[...new Set([...(state.personnel?.zhaoshangs||[]).map(p=>p.name), ...state.talents.map(t=>t.zhaoshang), ...Object.values(state.mapping).map(m=>m.zhaoshang)].filter(Boolean))];
   document.getElementById('ordersTable').innerHTML=`<table><thead><tr><th>出单时间</th><th>达人</th><th>商品</th><th>渠道${editable?' ✏️':''}</th><th>招商${editable?' ✏️':''}</th><th class="text-r">订单数</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody>${pageOrders.map((o,localIdx)=>{
     const idx = pageStart + localIdx; // 全局索引，用于 markOrderMappingChanged
-    const sourceTag = o.source==='api' ? '<span class="tag tag-green">API</span>' : `<span class="tag tag-gray">手动${o.operator?' · '+esc(o.operator):''}</span>`;
+    const sourceTag = o.source==='api' ? '<span class="tag tag-green">API</span>' : (o.source==='archive' ? '<span class="tag tag-blue">归档</span>' : `<span class="tag tag-gray">手动${o.operator?' · '+esc(o.operator):''}</span>`);
     const statusTag = o.commissionStatus ? (o.commissionStatus==='已结算'?'<span class="tag tag-green">已结算</span>':o.commissionStatus==='未结算'?'<span class="tag tag-orange">未结算</span>':'<span class="tag tag-red">取消</span>') : '-';
     const prodImg = o.productImg ? `<img class="product-thumb" src="${esc(o.productImg)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt=""><div class="product-thumb-placeholder" style="display:none">📦</div>` : `<div class="product-thumb-placeholder">📦</div>`;
     const prodName = esc(getProduct(o))||'-';
@@ -2147,7 +2208,7 @@ function renderOrders(resetPage){
     const timeCell = o.payTimeStr
       ? `<div style="white-space:nowrap"><span style="font-size:11px;color:var(--muted)">${esc(o.payTimeStr.slice(0,5))}</span> <b>${esc(o.payTimeStr.slice(5,16))}</b></div>`
       : `<span>${esc(o.date||'-')}</span>`;
-    return `<tr><td>${timeCell}</td><td><b>${esc(o.talentName)}</b></td><td>${prodCell}</td><td>${chCell}</td><td>${zsCell}</td><td class="text-r">${getOrderCount(o)}</td><td class="text-r"><b>${fmtMoney(getAmount(o))}</b></td><td class="text-r">${getServiceFee(o)?fmtMoney(getServiceFee(o)):'-'}</td><td class="text-r">${getCommission(o)?fmtMoney(getCommission(o)):'-'}</td><td>${statusTag}</td><td>${sourceTag}</td><td>${o.source==='api'||!canEdit()?'-':`<button class="btn btn-outline btn-sm" onclick="openOrderModal('${o.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">删除</button>`}</td></tr>`;
+    return `<tr><td>${timeCell}</td><td><b>${esc(o.talentName)}</b></td><td>${prodCell}</td><td>${chCell}</td><td>${zsCell}</td><td class="text-r">${getOrderCount(o)}</td><td class="text-r"><b>${fmtMoney(getAmount(o))}</b></td><td class="text-r">${getServiceFee(o)?fmtMoney(getServiceFee(o)):'-'}</td><td class="text-r">${getCommission(o)?fmtMoney(getCommission(o)):'-'}</td><td>${statusTag}</td><td>${sourceTag}</td><td>${o.source==='api'||o.source==='archive'||!canEdit()?'-':`<button class="btn btn-outline btn-sm" onclick="openOrderModal('${o.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">删除</button>`}</td></tr>`;
   }).join('')}</tbody></table>`;
 
   // 分页控件
@@ -3908,6 +3969,8 @@ async function init(){
     connectSSE();
   }
   await loadData();
+  // 加载归档月份索引（出单记录页下拉框动态生成归档选项）
+  loadArchiveIndex();
   // 加载后清理商品级映射冗余字段（一次性数据修正，幂等）
   if(cleanupRedundantProductMappings()) saveLocalState();
   // 数据加载后重新更新连接状态（GitHub云端数据加载成功后显示"云端数据模式"）
