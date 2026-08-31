@@ -83,10 +83,7 @@ jobs:
           - GitHub Secrets (WX_APPID / WX_SECRET) 未配置或已过期
           - 网络问题
 
-          请检查 [Actions 运行记录](../actions) 排查具体错误。
-
-          此 Issue 会在下次同步成功后自动关闭。"
-            echo "已创建失败通知 Issue"
+          请检查 [Actions 运行记录](../actions) 排查具体错误。" || true
           else
             echo "已存在打开的同步失败 Issue #$EXISTING，不重复创建"
           fi
@@ -104,9 +101,11 @@ jobs:
             echo "已关闭 Issue #$num"
           done
 
-      # 自循环：仅在同步成功时触发下一次（失败时不触发，等待 cron 每10分钟重启）
-      - name: 触发下一次同步
-        if: success()
+      # ★ 自愈循环：无论成功/失败都触发下一次（失败不静默），
+      #   配合 concurrency 排队保证同一时间只有一个同步在跑。
+      #   若 PAT_TOKEN 失效则重试 3 次后放弃，等待 cron 兜底重启。
+      - name: 自循环触发下一次
+        if: always()
         env:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
@@ -114,17 +113,22 @@ jobs:
             echo "PAT_TOKEN 未设置，跳过自触发"
             exit 0
           fi
-          echo "等待 5 分钟后触发下一次同步..."
-          sleep 300
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-            -H "Authorization: token $PAT_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            -H "User-Agent: sync-self-trigger" \
-            -H "Content-Type: application/json" \
-            -d '{"event_type":"sync"}' \
-            https://api.github.com/repos/maryy-lab/vhs-workbench/dispatches)
-          if [ "$RESPONSE" = "204" ]; then
-            echo "✅ 下一次同步已触发（自循环链路保持中）"
-          else
-            echo "⚠️ 触发失败 (HTTP $RESPONSE)，等待 cron 重启链路"
-          fi
+          echo "等待 90 秒后触发下一次同步..."
+          sleep 90
+          for attempt in 1 2 3; do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+              -H "Authorization: token $PAT_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "User-Agent: sync-self-trigger" \
+              -H "Content-Type: application/json" \
+              -d '{"event_type":"sync"}' \
+              https://api.github.com/repos/maryy-lab/vhs-workbench/dispatches)
+            if [ "$RESPONSE" = "204" ]; then
+              echo "✅ 下一次同步已触发（自循环链路保持中）"
+              exit 0
+            else
+              echo "⚠️ 触发失败 (HTTP $RESPONSE)，第 $attempt/3 次重试"
+              sleep 30
+            fi
+          done
+          echo "❌ 3 次重试仍失败，等待 cron 兜底重启链路"
