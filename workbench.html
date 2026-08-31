@@ -1337,28 +1337,32 @@ function getFilteredOrders(periodSel){
 
 // ===== 历史归档（data.json 之外的按月永久存档，云端 archive/YYYY-MM.json） =====
 const ARCHIVE_BASE_URLS = [
-  'archive/',                                                                                 // 同源相对路径（GitHub Pages最可靠）
+  'cloud-sync/archive/',                                                                      // 同源相对路径（GitHub Pages最可靠）
   'https://cdn.jsdelivr.net/gh/maryy-lab/vhs-workbench@main/cloud-sync/archive/',             // jsDelivr CDN备用
   'https://raw.githubusercontent.com/maryy-lab/vhs-workbench/main/cloud-sync/archive/'        // raw备用
 ];
 const archiveCache = {}; // month -> orders[]
 async function loadArchiveIndex(){
-  try{
-    const ctrl = new AbortController();
-    setTimeout(()=>ctrl.abort(), 10000);
-    const res = await fetch('archive/index.json', { signal: ctrl.signal, cache: 'no-cache' });
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const idx = await res.json();
-    const sel = document.getElementById('orderArchive');
-    if(!sel) return;
-    (idx.months||[]).forEach(m=>{
-      if(sel.querySelector(`option[value="${m}"]`)) return;
-      const opt = document.createElement('option');
-      opt.value = m;
-      opt.textContent = `📁 ${m.replace('-','年')}月（归档）`;
-      sel.appendChild(opt);
-    });
-  }catch(e){ console.log('[archive] 索引加载失败:', e.message); }
+  for(const base of ARCHIVE_BASE_URLS){
+    try{
+      const ctrl = new AbortController();
+      setTimeout(()=>ctrl.abort(), 10000);
+      const res = await fetch(base+'index.json', { signal: ctrl.signal, cache: 'no-cache' });
+      if(!res.ok) continue;
+      const idx = await res.json();
+      const sel = document.getElementById('orderArchive');
+      if(!sel) return;
+      (idx.months||[]).forEach(m=>{
+        if(sel.querySelector(`option[value="${m}"]`)) return;
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = `📁 ${m.replace('-','年')}月（归档）`;
+        sel.appendChild(opt);
+      });
+      return;
+    }catch(e){ console.log('[archive] 索引从', base, '加载失败:', e.message); }
+  }
+  console.log('[archive] 索引加载失败（所有路径）');
 }
 async function loadArchiveMonth(month){
   if(archiveCache[month]){ renderOrders(); return; }
