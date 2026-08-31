@@ -38,7 +38,7 @@ if (!APPID || !SECRET) {
 const RUN_START = Date.now();
 const LIST_DEADLINE = RUN_START + 7 * 60 * 1000;    // 拉列表最多 7 分钟
 const DETAIL_DEADLINE = RUN_START + 13 * 60 * 1000; // 拉详情最多到第 13 分钟
-const KEEP_DAYS = 30;      // 订单保留天数
+const KEEP_DAYS = 90;      // data.json 保留天数（更早的订单写入 archive 归档，永久保留）
 const MAX_ORDERS = 60000;  // data.json 行数硬上限
 
 // ============ 工具函数 ============
@@ -320,6 +320,92 @@ function transformListOrder(item) {
   };
 }
 
+// ============ 按月归档（永久保留，data.json 裁剪前调用） ============
+// 微信 API 只能查最近约40天订单，被裁剪的历史订单无法再拉回，
+// 因此每次同步先按月份把订单"固化"进 archive/YYYY-MM.json 永久留存在仓库里。
+// 归档文件格式: { month: "2026-07", orders: [...], _meta: { updatedAt, count } }
+const ARCHIVE_DIR = path.join(__dirname, 'archive');
+
+// 读归档文件：优先本地（Actions checkout 的是最新 HEAD），本地缺失时从 GitHub API 兜底拉取
+async function readArchive(month) {
+  const file = path.join(ARCHIVE_DIR, `${month}.json`);
+  if (fs.existsSync(file)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (Array.isArray(data.orders)) return data.orders;
+    } catch (e) { log(`读取本地归档 ${month} 失败: ${e.message}`); }
+  }
+  if (GITHUB_TOKEN) {
+    try {
+      const res = await axios.get(
+        `https://api.github.com/repos/${GITHUB_REPO}/contents/cloud-sync/archive/${month}.json`,
+        {
+          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.raw', 'User-Agent': 'archive-reader' },
+          timeout: 60000,
+          responseType: 'text',
+          transformResponse: [function(d) { return d; }]
+        }
+      );
+      const raw = typeof res.data === 'string' ? res.data : Buffer.from(res.data).toString('utf-8');
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.orders)) return data.orders;
+      }
+    } catch (e) {
+      // 404 表示该月份归档尚未创建，属正常（首次归档）
+      if (!String(e.message).includes('404')) log(`归档 ${month} 云端拉取失败: ${e.message}`);
+    }
+  }
+  return [];
+}
+
+// 新数据是否优于旧数据：兜底数据(详情缺失)不覆盖完整详情；同完整度取 syncedAt 较新
+function isBetterOrder(next, prev) {
+  const complete = o => o && !o._detailFailed && !!o.orderStatus && o.orderStatus !== '未知(详情获取失败)';
+  const nc = complete(next), pc = complete(prev);
+  if (nc && !pc) return true;
+  if (!nc && pc) return false;
+  return String(next.syncedAt || '') >= String(prev.syncedAt || '');
+}
+
+// 将订单按月份写入归档（按 id 去重，详情更完整的优先）
+async function archiveOrders(orders) {
+  if (!orders || !orders.length) return;
+  const byMonth = {};
+  for (const o of orders) {
+    const m = (o.date || toBeijingDateStr(o.createTime || Math.floor(Date.now() / 1000))).substring(0, 7);
+    (byMonth[m] = byMonth[m] || []).push(o);
+  }
+  for (const [month, list] of Object.entries(byMonth)) {
+    try {
+      const existing = await readArchive(month);
+      const map = new Map(existing.map(o => [o.id, o]));
+      let added = 0, upgraded = 0;
+      for (const o of list) {
+        const old = map.get(o.id);
+        if (!old) { map.set(o.id, o); added++; }
+        else if (isBetterOrder(o, old)) { map.set(o.id, o); upgraded++; }
+      }
+      const merged = [...map.values()];
+      fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
+      const file = path.join(ARCHIVE_DIR, `${month}.json`);
+      fs.writeFileSync(file, JSON.stringify({ month, orders: merged, _meta: { updatedAt: new Date().toISOString(), count: merged.length } }));
+      const sizeMB = (fs.statSync(file).size / 1024 / 1024).toFixed(2);
+      log(`归档 ${month}: 新增 ${added}, 升级 ${upgraded} → 累计 ${merged.length} 条 (${sizeMB} MB)`);
+    } catch (e) {
+      log(`⚠️ 归档 ${month} 失败: ${e.message}`);
+    }
+  }
+  // 重建归档索引（前端月份下拉框据此动态生成选项）
+  try {
+    const months = fs.readdirSync(ARCHIVE_DIR).filter(f => /^\d{4}-\d{2}\.json$/.test(f)).map(f => f.replace('.json', '')).sort();
+    fs.writeFileSync(path.join(ARCHIVE_DIR, 'index.json'), JSON.stringify({ months, updatedAt: new Date().toISOString() }));
+    log(`归档索引已更新: ${months.join(', ')}`);
+  } catch (e) {
+    log(`⚠️ 更新归档索引失败: ${e.message}`);
+  }
+}
+
 // ============ 提取达人列表 ============
 function extractTalents(orders, mapping) {
   const map = {};
@@ -570,7 +656,11 @@ async function main() {
 
     log(`处理完成: 新获取 ${fetched}, 刷新 ${refreshed}, 兜底 ${fallbackUsed}, 复用缓存 ${reused}, 刷新失败用旧缓存 ${errors}${budgetHit ? '（本轮触发时间预算，剩余工作量下一轮继续）' : ''}`);
 
-    // 4. 汇总 + 裁剪：保留 KEEP_DAYS 天内 且 不超过 MAX_ORDERS 行（超出丢最旧的，防 data.json 过大）
+    // 4. 按月归档（永久保留）：先归档全部订单（含即将被裁剪的超期部分），再裁剪 data.json
+    log('写入按月归档（永久保留）...');
+    await archiveOrders([...results.values()]);
+
+    // 汇总 + 裁剪：保留 KEEP_DAYS 天内 且 不超过 MAX_ORDERS 行（超出丢最旧的，防 data.json 过大）
     const cutoffSec = nowSec - KEEP_DAYS * 24 * 3600;
     let allOrders = [...results.values()].filter(o => {
       const t = o.createTime || o.payTime || 0;
