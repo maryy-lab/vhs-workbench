@@ -222,6 +222,11 @@ label{font-size:13px;color:var(--muted);font-weight:500}
 .login-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border)}
 .login-tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
 .login-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+/* Pagination */
+.pagination{display:flex;align-items:center;gap:8px;justify-content:center;padding:10px 4px;flex-wrap:wrap}
+.pagination button{min-width:36px}
+.pagination .page-info{font-size:13px;color:var(--muted);white-space:nowrap}
+.pagination select{width:auto;min-width:50px}
 </style>
 <script src="https://beacon.cdn.qq.com/sdk/4.5.9/beacon_web.min.js"></script>
 <script>
@@ -344,7 +349,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <button class="btn btn-primary btn-sm edit-only" onclick="openOrderModal()">➕ 添加出单记录</button>
     <button class="btn btn-success btn-sm edit-only" id="orderSaveMappingBtn" onclick="saveOrderMappings()" style="display:none">💾 保存渠道/招商修改</button>
     <div class="spacer"></div>
-    <input class="input" id="orderSearch" placeholder="搜索达人/商品..." oninput="renderOrders()" style="width:180px">
+    <input class="input" id="orderSearch" placeholder="搜索达人/商品..." oninput="debouncedRenderOrders()" style="width:180px">
     <select class="input" id="filterChannel" onchange="renderOrders()" style="min-width:120px"><option value="">全部渠道</option></select>
     <select class="input" id="filterZS" onchange="renderOrders()" style="min-width:120px"><option value="">全部招商</option></select>
     <select class="input" id="filterPeriod" onchange="renderOrders()" style="min-width:100px"><option value="all">全部时间</option><option value="1">今日</option><option value="7">近7天</option><option value="30">近30天</option></select>
@@ -352,6 +357,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="ordersTable" style="max-height:600px;overflow-y:auto"></div></div>
   <div id="ordersSummary" style="padding:8px 4px;font-size:13px;color:var(--muted)"></div>
+  <div id="ordersPagination" class="pagination"></div>
 </div>
 
 <!-- ===== Talents ===== -->
@@ -360,28 +366,31 @@ label{font-size:13px;color:var(--muted);font-weight:500}
     <button class="btn btn-primary btn-sm edit-only" onclick="openTalentModal()">➕ 添加达人</button>
     <button class="btn btn-success btn-sm edit-only" id="saveMappingBtn" onclick="saveAllMappings()" style="display:none">💾 保存渠道/招商修改</button>
     <div class="spacer"></div>
-    <input class="input" id="talentSearch" placeholder="搜索达人名..." oninput="renderTalents()" style="width:200px">
+    <input class="input" id="talentSearch" placeholder="搜索达人名..." oninput="debouncedRenderTalents()" style="width:200px">
     <select class="input" id="talentFilterAssign" onchange="renderTalents()" style="min-width:100px"><option value="">分配状态</option><option value="assigned">已分配</option><option value="unassigned">未分配</option></select>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="talentsTable" style="max-height:600px;overflow-y:auto"></div></div>
   <div style="padding:8px 4px;font-size:12px;color:var(--muted)" id="talentHint"></div>
+  <div id="talentsPagination" class="pagination"></div>
 </div>
 
 <!-- ===== Daily Stats ===== -->
 <div class="tab-content" id="tab-daily">
-  <div class="toolbar">
+  <div class="toolbar" style="flex-wrap:wrap;gap:8px">
     <label>日期：</label>
     <input type="date" class="input" id="dailyDate" onchange="renderDaily()">
     <label style="margin-left:12px">或范围：</label>
     <input type="date" class="input" id="dailyStart" onchange="renderDaily()">
     <span>~</span>
     <input type="date" class="input" id="dailyEnd" onchange="renderDaily()">
+    <button class="btn btn-outline btn-sm" onclick="document.getElementById('dailyStart').value='';document.getElementById('dailyEnd').value='';renderDaily()">清除范围</button>
     <div class="spacer"></div>
+    <select class="input" id="dailyUserFilter" onchange="renderDaily()" style="min-width:130px"></select>
     <select class="input" id="dailyMode" onchange="renderDaily()" style="min-width:120px">
       <option value="byDate">按日期查看</option>
       <option value="byTalent">按达人汇总</option>
+      <option value="byPerson">按人员查看（招商+渠道业绩）</option>
     </select>
-    <button class="btn btn-outline btn-sm" onclick="document.getElementById('dailyStart').value='';document.getElementById('dailyEnd').value='';renderDaily()">清除范围</button>
   </div>
   <div class="stat-grid" id="dailySummary"></div>
   <div class="card" style="padding:0;overflow:hidden"><div class="table-wrap" id="dailyTable" style="max-height:600px;overflow-y:auto"></div></div>
@@ -395,11 +404,11 @@ label{font-size:13px;color:var(--muted);font-weight:500}
   </div>
   <div class="chart-grid">
     <div class="chart-box"><div class="card-title">🎯 达人维度统计</div><div class="table-wrap" id="anaTalent" style="max-height:360px;overflow-y:auto"></div></div>
-    <div class="chart-box"><div class="card-title">📡 渠道维度统计</div><div class="table-wrap" id="anaChannel" style="max-height:360px;overflow-y:auto"></div></div>
+    <div class="chart-box"><div class="card-title">📅 日维度趋势</div><canvas id="chartAnaTrend"></canvas></div>
   </div>
   <div class="chart-grid">
     <div class="chart-box"><div class="card-title">💼 招商维度统计</div><div class="table-wrap" id="anaZS" style="max-height:360px;overflow-y:auto"></div></div>
-    <div class="chart-box"><div class="card-title">📅 日维度趋势</div><canvas id="chartAnaTrend"></canvas></div>
+    <div class="chart-box"><div class="card-title">📡 渠道维度统计</div><div class="table-wrap" id="anaChannel" style="max-height:360px;overflow-y:auto"></div></div>
   </div>
   <div class="card"><div class="card-title">🤖 智能分析报告</div><div class="insight-list" id="anaInsightList"></div></div>
 </div>
@@ -453,7 +462,7 @@ label{font-size:13px;color:var(--muted);font-weight:500}
   <div id="cloudModeBanner" style="display:none;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;padding:20px;border-radius:12px;margin-bottom:16px">
     <div style="font-size:18px;font-weight:600;margin-bottom:8px">☁️ 云端数据模式</div>
     <div style="font-size:14px;opacity:.9;line-height:1.8">
-      数据由 GitHub Actions 每 30 分钟自动从微信联盟 API 拉取并更新，无需手动同步。<br>
+      数据由 GitHub Actions 每 8 分钟自动从微信联盟 API 拉取并更新，无需手动同步。<br>
       如需在本地运行同步服务（更快的数据更新、API配置、商品同步等功能），请在电脑上双击「启动工作台.bat」。
     </div>
   </div>
@@ -756,7 +765,7 @@ const GITHUB_DATA_URLS = [
   'https://raw.githubusercontent.com/maryy-lab/vhs-workbench/main/cloud-sync/data.json'  // raw备用
 ];
 let githubDataLoaded = false;
-const DEFAULT_ROOM_ID = '019fa181-1038-700a-9d23-38f99c75d982'; // 云端房间ID，所有设备共享用户/映射/人员数据
+const DEFAULT_ROOM_ID = '019fc835-3c29-782a-a9f2-4e6237bf51d5'; // jsonblob 临时备份（24h过期，仅用于实时同步，配置主存储在 data.json）
 let cloudBlobId = null;
 let cloudLastSync = null;
 let cloudTimer = null;
@@ -1199,6 +1208,8 @@ function mergeCloudData(cloudData){
       changed = true;
     }
   }
+  // 清理商品级映射中与达人级重复/为空的冗余字段（显示不变，但保证达人级分配能正常生效）
+  if(cleanupRedundantProductMappings()) changed = true;
   saveLocalState();
   return changed;
 }
@@ -1235,7 +1246,7 @@ async function cloudSync(){
 
 function startCloudAutoSync(){
   if(cloudTimer) clearInterval(cloudTimer);
-  cloudTimer = setInterval(() => cloudSync(), 8000); // 8秒轮询，更快感知变更
+  cloudTimer = setInterval(() => cloudSync(), 30000); // 30秒轮询
 }
 
 async function shareRoom(){
@@ -1282,10 +1293,17 @@ function showShareModal(url){
 
 // ===================== State =====================
 const LS_KEY = 'vhs_workbench_v2';
-let state = { orders: [], talents: [], mapping: {}, productMapping: {}, products: [], personnel: { channels: [], zhaoshangs: [] }, users: {} };
+let state = { orders: [], talents: [], mapping: {}, productMapping: {}, products: [], personnel: { channels: [], zhaoshangs: [] }, users: {}, _deleted: { channels: {}, zhaoshangs: {}, users: {} } };
 let charts = {};
 let pendingMappings = {}; // 待保存的映射修改
 let serverStatus = null;
+// 分页状态（订单表 & 达人表）
+let _orderCurrentPage = 1;
+const ORDER_PAGE_SIZE = 50;
+let _orderSearchTimer = null;
+let _talentCurrentPage = 1;
+const TALENT_PAGE_SIZE = 50;
+let _talentSearchTimer = null;
 let currentUser = localStorage.getItem('vhs_user') || '';
 let currentUserRole = 'viewer'; // admin, manager, viewer
 let loginMode = 'login'; // login or register
@@ -1298,8 +1316,11 @@ const DEFAULT_ADMIN_PWD = '123456';
 function toast(msg, type='info'){ const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show '+type; setTimeout(()=>el.className='toast '+type, 2500); }
 function fmtMoney(n){ return '¥'+(Number(n)||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtNum(n){ return (Number(n)||0).toLocaleString('zh-CN'); }
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+// 注意：全部使用本地时间(北京)，不使用 toISOString()(它返回 UTC，凌晨的单会算到前一天)
+function todayStr(){ return daysAgo(0); }
 function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
+function monthStartStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'; }
+function monthLabelStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function pct(cur, prev){ if(!prev||prev===0) return cur>0?100:0; return ((cur-prev)/prev*100); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1322,28 +1343,93 @@ function getPrevFilteredOrders(periodSel){
 }
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
+// 达人显示渠道/招商：综合 talent 级和 product 级映射
+// 如果按商品分配了，自动在达人表显示：同一组 → 显示名称，不同组 → 显示"已分配"
+function getTalentDisplayInfo(talentName){
+  const orders = state.orders.filter(o => o.talentName === talentName);
+  const productIds = [...new Set(orders.map(o => o.productId).filter(Boolean))];
+  const productChannels = new Set();
+  const productZhaoshangs = new Set();
+  let hasProductMapping = false;
+
+  productIds.forEach(pid => {
+    const pkey = talentName + '|' + pid;
+    const pm = state.productMapping?.[pkey];
+    if(pm){
+      hasProductMapping = true;
+      if(pm.channel) productChannels.add(pm.channel);
+      if(pm.zhaoshang) productZhaoshangs.add(pm.zhaoshang);
+    }
+  });
+
+  let displayChannel = '', channelFromProduct = false;
+  if(hasProductMapping && productChannels.size > 0){
+    displayChannel = productChannels.size === 1 ? [...productChannels][0] : '已分配';
+    channelFromProduct = true;
+  } else {
+    // 达人级映射存在时以其为准（含空值=已清空），不存在时才回落到达人记录
+    const tmCh = state.mapping[talentName]?.channel;
+    displayChannel = tmCh !== undefined ? tmCh : (state.talents.find(t=>t.name===talentName)?.channel || '');
+  }
+
+  let displayZS = '', zsFromProduct = false;
+  if(hasProductMapping && productZhaoshangs.size > 0){
+    displayZS = productZhaoshangs.size === 1 ? [...productZhaoshangs][0] : '已分配';
+    zsFromProduct = true;
+  } else {
+    const tmZs = state.mapping[talentName]?.zhaoshang;
+    displayZS = tmZs !== undefined ? tmZs : (state.talents.find(t=>t.name===talentName)?.zhaoshang || '');
+  }
+
+  return { displayChannel, displayZS, channelFromProduct, zsFromProduct, hasProductMapping };
+}
+
 // 统一字段获取（兼容API同步和手动录入）
 function getAmount(o){ return Number(o.amount)||Number(o.salesAmount)||0; }
-function getServiceFee(o){ return Number(o.serviceFee)||Number(o.serviceAmount)||0; }
+function getServiceFee(o){ if(o.commissionStatus==='取消结算') return 0; return Number(o.serviceFee)||Number(o.serviceAmount)||0; }
 function getCommission(o){ return Number(o.commission)||Number(o.talentCommission)||0; }
 function getCommissionRate(o){ return Number(o.commissionRate)||Number(o.talentCommissionRatio)||0; }
 function getProduct(o){ return o.product||o.productTitle||''; }
 function getOrderCount(o){ return Number(o.orderCount)||Number(o.productCount)||1; }
+function isApiOrder(o){ return !!(o.orderId || o.source === 'api'); }
 function getChannel(o){
-  if(o.channel) return o.channel;
-  // 先查产品级映射（达人+商品）
+  // 优先级：商品级映射 > 达人级映射 > 手动订单自带字段
+  // 注意：API 同步订单上的 channel 是同步时烘焙的快照，不作为分配依据（否则会遮蔽用户的分配）
   const pkey = (o.talentName||'') + '|' + (o.productId||'');
   if(o.productId && state.productMapping?.[pkey]?.channel) return state.productMapping[pkey].channel;
-  // 再查达人级映射
-  if(state.mapping[o.talentName]?.channel) return state.mapping[o.talentName].channel;
+  const tm = state.mapping[o.talentName];
+  if(tm && tm.channel) return tm.channel;
+  if(!isApiOrder(o) && tm === undefined && o.channel) return o.channel;
   return '';
 }
 function getZhaoshang(o){
-  if(o.zhaoshang) return o.zhaoshang;
+  // 优先级：商品级映射 > 达人级映射 > 手动订单自带字段
   const pkey = (o.talentName||'') + '|' + (o.productId||'');
   if(o.productId && state.productMapping?.[pkey]?.zhaoshang) return state.productMapping[pkey].zhaoshang;
-  if(state.mapping[o.talentName]?.zhaoshang) return state.mapping[o.talentName].zhaoshang;
+  const tm = state.mapping[o.talentName];
+  if(tm && tm.zhaoshang) return tm.zhaoshang;
+  if(!isApiOrder(o) && tm === undefined && o.zhaoshang) return o.zhaoshang;
   return '';
+}
+
+// 清理商品级映射中的冗余字段：空值或与达人级值完全相同的字段
+// （显示结果不变——会向下回落到达人级取到同样的值；但达人级重新分配时能正常生效，不被旧值遮蔽）
+function cleanupRedundantProductMappings(){
+  if(!state.productMapping) return false;
+  let changed = false;
+  for(const pkey of Object.keys(state.productMapping)){
+    const pm = state.productMapping[pkey];
+    if(!pm || typeof pm !== 'object') continue;
+    const talentName = pkey.split('|')[0];
+    const tm = state.mapping?.[talentName];
+    ['channel','zhaoshang'].forEach(f => {
+      if(pm[f] !== undefined && (!pm[f] || (tm && pm[f] === tm[f]))){
+        delete pm[f]; changed = true;
+      }
+    });
+    if(Object.keys(pm).length === 0) delete state.productMapping[pkey];
+  }
+  return changed;
 }
 
 // ===================== Data Loading =====================
@@ -1361,14 +1447,26 @@ async function loadData() {
     const apiOrders = (data.orders || []).map(o => ({ ...o, source: 'api' }));
     const localOrders = (state.orders || []).filter(o => o.source !== 'api');
     state.orders = [...apiOrders, ...localOrders];
-    state.mapping = data.mapping || {};
-    state.products = data.products || [];
+    state.mapping = {...(data.mapping||{}), ...(state.mapping||{})};
+    state.products = data.products || state.products || [];
     const apiTalentNames = new Set((data.talents || []).map(t => t.name));
     const localTalents = (state.talents || []).filter(t => !apiTalentNames.has(t.name));
     state.talents = [...(data.talents || []), ...localTalents];
+    // 合并 personnel：本地优先，云端补充
     if (data.personnel) {
-      state.personnel = data.personnel;
+      if(!state.personnel) state.personnel = { channels: [], zhaoshangs: [] };
+      const chNames = new Set((state.personnel.channels||[]).map(p=>p.name));
+      (data.personnel.channels||[]).forEach(p => { if(p.name && !chNames.has(p.name)){ state.personnel.channels.push(p); chNames.add(p.name); } });
+      const zsNames = new Set((state.personnel.zhaoshangs||[]).map(p=>p.name));
+      (data.personnel.zhaoshangs||[]).forEach(p => { if(p.name && !zsNames.has(p.name)){ state.personnel.zhaoshangs.push(p); zsNames.add(p.name); } });
       savePersonnelData();
+    }
+    // 合并 _deleted 删除记录
+    if(data._deleted){
+      if(!state._deleted) state._deleted = { channels: {}, zhaoshangs: {}, users: {} };
+      state._deleted.channels = { ...(data._deleted.channels||{}), ...(state._deleted.channels||{}) };
+      state._deleted.zhaoshangs = { ...(data._deleted.zhaoshangs||{}), ...(state._deleted.zhaoshangs||{}) };
+      state._deleted.users = { ...(data._deleted.users||{}), ...(state._deleted.users||{}) };
     }
     console.log('[loadData] 使用注入数据: 订单', state.orders.length, '达人', state.talents.length);
     return;
@@ -1380,14 +1478,14 @@ async function loadData() {
       const apiOrders = (data.orders || []).map(o => ({ ...o, source: 'api' }));
       const localOrders = (state.orders || []).filter(o => o.source !== 'api');
       state.orders = [...apiOrders, ...localOrders];
-      state.mapping = data.mapping || {};
-      state.productMapping = data.productMapping || {};
-      state.products = data.products || [];
+      state.mapping = {...(data.mapping||{}), ...(state.mapping||{})};
+      state.productMapping = {...(data.productMapping||{}), ...(state.productMapping||{})};
+      state.products = data.products || state.products || [];
       // 合并达人：API达人 + 本地达人
       const apiTalentNames = new Set((data.talents || []).map(t => t.name));
       const localTalents = (state.talents || []).filter(t => !apiTalentNames.has(t.name));
       state.talents = [...(data.talents || []), ...localTalents];
-      // 加载人员数据
+      // 加载人员数据 —— 合并：本地优先，服务器补充
       try {
         const personnel = await Server.getPersonnel();
         if(personnel){
@@ -1396,7 +1494,12 @@ async function loadData() {
           if(Array.isArray(personnel.zhaoshang)){ personnel.zhaoshangs = [...(personnel.zhaoshangs||[]), ...personnel.zhaoshang]; delete personnel.zhaoshang; }
           if(!personnel.channels) personnel.channels = [];
           if(!personnel.zhaoshangs) personnel.zhaoshangs = [];
-          state.personnel = personnel;
+          // 合并：本地已有的人员保留，服务器新增的人员补充
+          if(!state.personnel) state.personnel = { channels: [], zhaoshangs: [] };
+          const chNames = new Set((state.personnel.channels||[]).map(p=>p.name));
+          (personnel.channels||[]).forEach(p => { if(p.name && !chNames.has(p.name)){ state.personnel.channels.push(p); chNames.add(p.name); } });
+          const zsNames = new Set((state.personnel.zhaoshangs||[]).map(p=>p.name));
+          (personnel.zhaoshangs||[]).forEach(p => { if(p.name && !zsNames.has(p.name)){ state.personnel.zhaoshangs.push(p); zsNames.add(p.name); } });
           savePersonnelData();
         }
       } catch(e){}
@@ -1409,12 +1512,19 @@ async function loadData() {
       try {
         const ctrl = new AbortController();
         setTimeout(() => ctrl.abort(), 10000);
-        // 添加时间戳参数绕过 CDN 缓存，确保每次都拿到最新数据
-        const bustUrl = dataUrl + (dataUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
-        const res = await fetch(bustUrl, { signal: ctrl.signal, cache: 'no-cache' });
+        // 使用 no-cache 模式：浏览器通过 ETag/Last-Modified 做条件请求
+        // 文件未变时返回304（无body），避免重复下载1.4MB
+        const res = await fetch(dataUrl, { signal: ctrl.signal, cache: 'no-cache' });
         if (res.ok) {
           const data = await res.json();
           if (data.orders && data.orders.length > 0) {
+            // 数据未变则跳过合并/渲染（_meta.time 是 sync.js 每次写入时更新的时间戳）
+            const newMetaTime = data._meta?.time || '';
+            if(newMetaTime && newMetaTime === (state._meta?.time || '')){
+              githubDataLoaded = true;
+              cloudDataLoaded = true;
+              break; // 数据未变，跳过后续处理
+            }
             const apiOrders = data.orders.map(o => ({ ...o, source: 'api' }));
             const localOrders = (state.orders || []).filter(o => o.source !== 'api');
             state.orders = [...apiOrders, ...localOrders];
@@ -1430,17 +1540,38 @@ async function loadData() {
             const apiTalentNames = new Set((data.talents || []).map(t => t.name));
             const localTalents = (state.talents || []).filter(t => !apiTalentNames.has(t.name));
             state.talents = [...(data.talents || []), ...localTalents];
-            // 加载用户和人员数据
+            // 加载用户和人员数据 —— 合并而非覆盖本地（本地优先，防止云端空数据清空本地配置）
             if(data.users && Object.keys(data.users).length > 0){
-              state.users = data.users;
-              try { localStorage.setItem(USERS_LS_KEY, JSON.stringify(data.users)); } catch(e){}
+              const mergedUsers = {...data.users, ...(state.users||{})};
+              state.users = mergedUsers;
+              try { localStorage.setItem(USERS_LS_KEY, JSON.stringify(mergedUsers)); } catch(e){}
             }
             if(data.personnel){
-              state.personnel = data.personnel;
-              try { localStorage.setItem(PERSONNEL_LS_KEY, JSON.stringify(data.personnel)); } catch(e){}
+              if(!state.personnel) state.personnel = { channels: [], zhaoshangs: [] };
+              // 合并：本地已有的人员保留，云端新增的人员补充
+              const chNames = new Set((state.personnel.channels||[]).map(p=>p.name));
+              (data.personnel.channels||[]).forEach(p => { if(p.name && !chNames.has(p.name)){ state.personnel.channels.push(p); chNames.add(p.name); } });
+              const zsNames = new Set((state.personnel.zhaoshangs||[]).map(p=>p.name));
+              (data.personnel.zhaoshangs||[]).forEach(p => { if(p.name && !zsNames.has(p.name)){ state.personnel.zhaoshangs.push(p); zsNames.add(p.name); } });
+              try { localStorage.setItem(PERSONNEL_LS_KEY, JSON.stringify(state.personnel)); } catch(e){}
+            }
+            // 合并 mapping：云端 + 本地（本地优先）
+            if(data.mapping && Object.keys(data.mapping).length > 0){
+              state.mapping = {...data.mapping, ...(state.mapping||{})};
+            }
+            // 合并 productMapping：同理
+            if(data.productMapping && Object.keys(data.productMapping).length > 0){
+              state.productMapping = {...data.productMapping, ...(state.productMapping||{})};
             }
             if(data._meta){
               state._meta = data._meta;
+            }
+            // 加载云端删除记录（合并到本地，确保删除操作跨设备同步）
+            if(data._deleted){
+              if(!state._deleted) state._deleted = { channels: {}, zhaoshangs: {}, users: {} };
+              state._deleted.channels = { ...(data._deleted.channels||{}), ...(state._deleted.channels||{}) };
+              state._deleted.zhaoshangs = { ...(data._deleted.zhaoshangs||{}), ...(state._deleted.zhaoshangs||{}) };
+              state._deleted.users = { ...(data._deleted.users||{}), ...(state._deleted.users||{}) };
             }
             githubDataLoaded = true;
             cloudDataLoaded = true;
@@ -1482,7 +1613,7 @@ const GH_DATA_PATH = 'cloud-sync/data.json';
 const GH_API_BASE = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + GH_DATA_PATH;
 
 // 内置 Token（混淆存储，用于自动保存配置到云端）
-const _EK = ['Z2hwX3hNU2t1Tz','NTc2lOR09MOVMz','bXh5QlJZcUtQRk','JyRjFvNWN3RQ=='].join('');
+const _EK = ['Z2hwX1VwQjgyZ2','x2RFRvYVg5Y2xU','QVZjeVBuVWl0OH','BlRTJIS2lQSQ=='].join('');
 function _gt(){ try { return atob(_EK); } catch(e){ return ''; } }
 
 // 尝试多个网络途径请求 GitHub API（国内直连 api.github.com 可能失败）
@@ -1534,44 +1665,89 @@ async function saveConfigToGitHub(silent){
   try {
     let existing, sha;
 
-    // 方式1：同源读取 data.json（不经过 api.github.com，避免被墙）
+    // 方式1：通过 API 读取（优先，确保 SHA 正确，避免 Pages 缓存导致 409）
     try {
-      const rawResp = await fetch('cloud-sync/data.json?t=' + Date.now());
-      if (rawResp.ok) {
-        const buffer = await rawResp.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        sha = await computeGitBlobSha(bytes);
-        const text = new TextDecoder('utf-8').decode(bytes);
-        existing = JSON.parse(text);
-      }
-    } catch(e) { /* 同源读取失败，走 API */ }
-
-    // 方式2：通过 API 读取（带代理兜底）
-    if (!existing || !sha) {
       if(statusEl) statusEl.textContent = '正在读取云端数据...';
       const resp = await fetchWithFallback(GH_API_BASE, {
         headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
       });
-      if(!resp.ok) throw new Error('读取云端数据失败: ' + resp.status);
-      const fileData = await resp.json();
-      sha = fileData.sha;
-      existing = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+      if(resp.ok) {
+        const fileData = await resp.json();
+        sha = fileData.sha;
+        existing = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+      }
+    } catch(e) { /* API 读取失败，尝试同源 */ }
+
+    // 方式2：同源读取 data.json（API 被墙时的兜底）
+    if (!existing || !sha) {
+      try {
+        const rawResp = await fetch('cloud-sync/data.json?t=' + Date.now());
+        if (rawResp.ok) {
+          const buffer = await rawResp.arrayBuffer();
+          const bytes = new Uint8Array(buffer);
+          sha = await computeGitBlobSha(bytes);
+          const text = new TextDecoder('utf-8').decode(bytes);
+          existing = JSON.parse(text);
+        }
+      } catch(e) { /* 同源读取也失败 */ }
     }
 
-    // 用本地配置覆盖（保留云端订单，只更新配置部分）
-    existing.users = state.users || {};
-    existing.personnel = state.personnel || { channels: [], zhaoshangs: [] };
-    existing.mapping = state.mapping || {};
-    existing.productMapping = state.productMapping || {};
-    existing.products = state.products || [];
+    if (!existing || !sha) throw new Error('无法读取云端数据');
+
+    // 合并本地配置到云端最新数据（而非覆盖），确保多设备操作不丢配置
+    // 合并策略：云端优先作为基础，本地同 key 覆盖（本地优先），云端独有 key 保留
+    if(state.users && Object.keys(state.users).length > 0) existing.users = { ...(existing.users||{}), ...state.users };
+    if(state.personnel && (state.personnel.channels?.length || state.personnel.zhaoshangs?.length)) {
+      const ep = existing.personnel || { channels: [], zhaoshangs: [] };
+      // channels: 按 name 合并，本地同名覆盖云端，云端独有保留
+      const mergedCh = [...(ep.channels||[])];
+      const chMap = new Map(mergedCh.map((p,i) => [p.name, i]));
+      (state.personnel.channels||[]).forEach(p => {
+        if(p.name) { if(chMap.has(p.name)) mergedCh[chMap.get(p.name)] = p; else { mergedCh.push(p); chMap.set(p.name, mergedCh.length-1); } }
+      });
+      // zhaoshangs: 同理
+      const mergedZs = [...(ep.zhaoshangs||[])];
+      const zsMap = new Map(mergedZs.map((p,i) => [p.name, i]));
+      (state.personnel.zhaoshangs||[]).forEach(p => {
+        if(p.name) { if(zsMap.has(p.name)) mergedZs[zsMap.get(p.name)] = p; else { mergedZs.push(p); zsMap.set(p.name, mergedZs.length-1); } }
+      });
+      existing.personnel = { channels: mergedCh, zhaoshangs: mergedZs };
+    }
+    if(state.mapping && Object.keys(state.mapping).length > 0) existing.mapping = { ...(existing.mapping||{}), ...state.mapping };
+    if(state.productMapping && Object.keys(state.productMapping).length > 0) existing.productMapping = { ...(existing.productMapping||{}), ...state.productMapping };
+    if(state.products && state.products.length > 0) {
+      const ep2 = existing.products || [];
+      const pidSet = new Set(state.products.map(p => p.product_id || p.id));
+      existing.products = [...state.products, ...ep2.filter(p => !pidSet.has(p.product_id || p.id))];
+    }
     existing._meta = existing._meta || {};
     existing._meta.configUpdated = new Date().toISOString();
     existing._meta.configUpdatedBy = currentUser || 'unknown';
 
+    // 合并删除记录（云端 + 本地的并集），然后过滤掉已删除的项
+    const localDeleted = state._deleted || { channels: {}, zhaoshangs: {}, users: {} };
+    existing._deleted = existing._deleted || { channels: {}, zhaoshangs: {}, users: {} };
+    existing._deleted.channels = { ...(existing._deleted.channels||{}), ...(localDeleted.channels||{}) };
+    existing._deleted.zhaoshangs = { ...(existing._deleted.zhaoshangs||{}), ...(localDeleted.zhaoshangs||{}) };
+    existing._deleted.users = { ...(existing._deleted.users||{}), ...(localDeleted.users||{}) };
+    // 应用删除：过滤掉已删除的渠道/招商/用户
+    if(existing.personnel?.channels) existing.personnel.channels = existing.personnel.channels.filter(c => !existing._deleted.channels[c.name]);
+    if(existing.personnel?.zhaoshangs) existing.personnel.zhaoshangs = existing.personnel.zhaoshangs.filter(z => !existing._deleted.zhaoshangs[z.name]);
+    if(existing.users) Object.keys(existing._deleted.users || {}).forEach(name => { delete existing.users[name]; });
+    // 清理 mapping/productMapping 中引用已删除渠道/招商的字段，防止悬空引用
+    if(existing.mapping) Object.keys(existing.mapping).forEach(k => {
+      if(existing.mapping[k]?.channel && existing._deleted.channels[existing.mapping[k].channel]) existing.mapping[k].channel = '';
+      if(existing.mapping[k]?.zhaoshang && existing._deleted.zhaoshangs[existing.mapping[k].zhaoshang]) existing.mapping[k].zhaoshang = '';
+    });
+    if(existing.productMapping) Object.keys(existing.productMapping).forEach(k => {
+      if(existing.productMapping[k]?.channel && existing._deleted.channels[existing.productMapping[k].channel]) existing.productMapping[k].channel = '';
+      if(existing.productMapping[k]?.zhaoshang && existing._deleted.zhaoshangs[existing.productMapping[k].zhaoshang]) existing.productMapping[k].zhaoshang = '';
+    });
+
     // 编码并上传
     if(statusEl) statusEl.textContent = '正在上传配置...';
     const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(existing, null, 2))));
-    const putResp = await fetchWithFallback(GH_API_BASE, {
+    let putResp = await fetchWithFallback(GH_API_BASE, {
       method: 'PUT',
       headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
       body: JSON.stringify({
@@ -1580,6 +1756,74 @@ async function saveConfigToGitHub(silent){
         sha: sha
       })
     });
+
+    // SHA 冲突（409）：重新读取最新 SHA 并重试一次
+    if(putResp.status === 409) {
+      console.warn('[saveConfig] SHA 冲突，重新读取后重试...');
+      if(statusEl) statusEl.textContent = '配置已更新，正在重试...';
+      const retryResp = await fetchWithFallback(GH_API_BASE, {
+        headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
+      });
+      if(retryResp.ok) {
+        const fileData = await retryResp.json();
+        sha = fileData.sha;
+        const latestExisting = JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+        // 合并本地配置到最新云端版本（而非覆盖），确保多设备操作不丢配置
+        if(state.users && Object.keys(state.users).length > 0) latestExisting.users = { ...(latestExisting.users||{}), ...state.users };
+        if(state.personnel && (state.personnel.channels?.length || state.personnel.zhaoshangs?.length)) {
+          const ep = latestExisting.personnel || { channels: [], zhaoshangs: [] };
+          const mergedCh = [...(ep.channels||[])];
+          const chMap = new Map(mergedCh.map((p,i) => [p.name, i]));
+          (state.personnel.channels||[]).forEach(p => {
+            if(p.name) { if(chMap.has(p.name)) mergedCh[chMap.get(p.name)] = p; else { mergedCh.push(p); chMap.set(p.name, mergedCh.length-1); } }
+          });
+          const mergedZs = [...(ep.zhaoshangs||[])];
+          const zsMap = new Map(mergedZs.map((p,i) => [p.name, i]));
+          (state.personnel.zhaoshangs||[]).forEach(p => {
+            if(p.name) { if(zsMap.has(p.name)) mergedZs[zsMap.get(p.name)] = p; else { mergedZs.push(p); zsMap.set(p.name, mergedZs.length-1); } }
+          });
+          latestExisting.personnel = { channels: mergedCh, zhaoshangs: mergedZs };
+        }
+        if(state.mapping && Object.keys(state.mapping).length > 0) latestExisting.mapping = { ...(latestExisting.mapping||{}), ...state.mapping };
+        if(state.productMapping && Object.keys(state.productMapping).length > 0) latestExisting.productMapping = { ...(latestExisting.productMapping||{}), ...state.productMapping };
+        if(state.products && state.products.length > 0) {
+          const ep2 = latestExisting.products || [];
+          const pidSet = new Set(state.products.map(p => p.product_id || p.id));
+          latestExisting.products = [...state.products, ...ep2.filter(p => !pidSet.has(p.product_id || p.id))];
+        }
+        latestExisting._meta = latestExisting._meta || {};
+        latestExisting._meta.configUpdated = new Date().toISOString();
+        latestExisting._meta.configUpdatedBy = currentUser || 'unknown';
+        // 合并删除记录 + 过滤已删除项（与初次保存逻辑一致）
+        const localDeleted2 = state._deleted || { channels: {}, zhaoshangs: {}, users: {} };
+        latestExisting._deleted = latestExisting._deleted || { channels: {}, zhaoshangs: {}, users: {} };
+        latestExisting._deleted.channels = { ...(latestExisting._deleted.channels||{}), ...(localDeleted2.channels||{}) };
+        latestExisting._deleted.zhaoshangs = { ...(latestExisting._deleted.zhaoshangs||{}), ...(localDeleted2.zhaoshangs||{}) };
+        latestExisting._deleted.users = { ...(latestExisting._deleted.users||{}), ...(localDeleted2.users||{}) };
+        if(latestExisting.personnel?.channels) latestExisting.personnel.channels = latestExisting.personnel.channels.filter(c => !latestExisting._deleted.channels[c.name]);
+        if(latestExisting.personnel?.zhaoshangs) latestExisting.personnel.zhaoshangs = latestExisting.personnel.zhaoshangs.filter(z => !latestExisting._deleted.zhaoshangs[z.name]);
+        if(latestExisting.users) Object.keys(latestExisting._deleted.users || {}).forEach(name => { delete latestExisting.users[name]; });
+        // 清理 mapping/productMapping 中引用已删除渠道/招商的字段
+        if(latestExisting.mapping) Object.keys(latestExisting.mapping).forEach(k => {
+          if(latestExisting.mapping[k]?.channel && latestExisting._deleted.channels[latestExisting.mapping[k].channel]) latestExisting.mapping[k].channel = '';
+          if(latestExisting.mapping[k]?.zhaoshang && latestExisting._deleted.zhaoshangs[latestExisting.mapping[k].zhaoshang]) latestExisting.mapping[k].zhaoshang = '';
+        });
+        if(latestExisting.productMapping) Object.keys(latestExisting.productMapping).forEach(k => {
+          if(latestExisting.productMapping[k]?.channel && latestExisting._deleted.channels[latestExisting.productMapping[k].channel]) latestExisting.productMapping[k].channel = '';
+          if(latestExisting.productMapping[k]?.zhaoshang && latestExisting._deleted.zhaoshangs[latestExisting.productMapping[k].zhaoshang]) latestExisting.productMapping[k].zhaoshang = '';
+        });
+        const retryContent = btoa(unescape(encodeURIComponent(JSON.stringify(latestExisting, null, 2))));
+        putResp = await fetchWithFallback(GH_API_BASE, {
+          method: 'PUT',
+          headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+          body: JSON.stringify({
+            message: 'Update config (retry): users/personnel/mapping (by ' + (currentUser || 'user') + ')',
+            content: retryContent,
+            sha: sha
+          })
+        });
+      }
+    }
 
     if(!putResp.ok) {
       let errMsg = '上传失败: ' + putResp.status;
@@ -1590,21 +1834,6 @@ async function saveConfigToGitHub(silent){
     statusEl.textContent = '✅ 已保存到云端，所有设备将能看到更新';
     statusEl.style.color = 'var(--success)';
     if(!silent) toast('配置已保存到云端！', 'success');
-
-    // 同时上传到 jsonblob（兼容旧逻辑）
-    try {
-      await fetch('https://jsonblob.com/api/jsonBlob/' + DEFAULT_ROOM_ID, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mapping: state.mapping || {},
-          users: state.users || {},
-          personnel: state.personnel || { channels: [], zhaoshangs: [] },
-          products: state.products || [],
-          productMapping: state.productMapping || {}
-        })
-      });
-    } catch(e) { /* jsonblob 失败不影响主流程 */ }
 
   } catch(e) {
     console.error('saveConfigToGitHub error:', e);
@@ -1663,6 +1892,7 @@ async function updateConnectionStatus() {
         staleMsg = `⚠️ 数据已 ${Math.floor(ageMin/60)} 小时未更新（上次更新: ${new Date(metaTime).toLocaleString('zh-CN')}）`;
         if (syncErr) staleMsg += ` | 同步错误: ${syncErr}`;
         staleMsg += ' | <a href="javascript:retryLoadCloudData()" style="color:#fff;text-decoration:underline">点此重新加载</a>';
+        staleMsg += ' | <a href="javascript:triggerCloudSync()" style="color:#fff;text-decoration:underline;font-weight:bold">🔧 点此手动触发同步</a>';
       }
     }
     if (isStale) {
@@ -1671,7 +1901,7 @@ async function updateConnectionStatus() {
     } else {
       banner.className = 'banner online';
       const updateInfo = metaTime ? `最近更新: ${new Date(metaTime).toLocaleString('zh-CN')}` : '';
-      bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每15分钟自动更新${updateInfo ? ' | ' + updateInfo : ''}`;
+      bannerText.innerHTML = `☁️ 云端数据模式 | ${orderCount} 条订单，${talentCount} 位达人 | 数据每10分钟自动更新${updateInfo ? ' | ' + updateInfo : ''} | <a href="javascript:triggerCloudSync()" style="color:#fff;text-decoration:underline">手动同步</a>`;
     }
   } else if (isCloudMode && cloudBlobId) {
     badge.className = 'api-status online';
@@ -1710,14 +1940,22 @@ function renderDashboard(){
   const period = document.getElementById('dashPeriod').value;
   const orders = getFilteredOrders(period);
   const prevOrders = getPrevFilteredOrders(period);
-  const totalOrders = orders.length;
-  const totalSales = orders.reduce((s,o)=>s+getAmount(o),0);
-  const totalComm = orders.reduce((s,o)=>s+getCommission(o),0);
-  const totalService = orders.reduce((s,o)=>s+getServiceFee(o),0);
-  const activeTalents = new Set(orders.map(o=>o.talentName)).size;
-  const activeProducts = new Set(orders.map(o=>o.productId).filter(Boolean)).size;
-  const prevSales = prevOrders.reduce((s,o)=>s+getAmount(o),0);
-  const prevComm = prevOrders.reduce((s,o)=>s+getCommission(o),0);
+  // 单次遍历统计当前周期数据（替代原来6次独立的 reduce/map）
+  let totalOrders = 0, totalSales = 0, totalComm = 0, totalService = 0;
+  const talentSet = new Set(), productSet = new Set();
+  for(const o of orders){
+    totalOrders++;
+    totalSales += getAmount(o);
+    totalComm += getCommission(o);
+    totalService += getServiceFee(o);
+    if(o.talentName) talentSet.add(o.talentName);
+    if(o.productId) productSet.add(o.productId);
+  }
+  const activeTalents = talentSet.size;
+  const activeProducts = productSet.size;
+  // 单次遍历统计上期数据
+  let prevSales = 0, prevComm = 0;
+  for(const o of prevOrders){ prevSales += getAmount(o); prevComm += getCommission(o); }
   const prevOrdersN = prevOrders.length;
   const salesChange = pct(totalSales, prevSales);
   const commChange = pct(totalComm, prevComm);
@@ -1779,9 +2017,9 @@ function renderTalentRankTable(orders){
   const arr=Object.values(map).sort((a,b)=>b.amount-a.amount).slice(0,10);
   const max=arr[0]?.amount||1;
   if(!arr.length){ document.getElementById('talentRankTable').innerHTML=emptyHTML('暂无出单数据'); return; }
-  document.getElementById('talentRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>达人</th><th>渠道</th><th>出单</th><th>商品数</th><th>销售额</th><th>服务费</th><th>占比</th></tr></thead><tbody>${arr.map((t,i)=>{
+  document.getElementById('talentRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>达人</th><th>渠道</th><th>销售额</th><th>出单</th><th>商品数</th><th>服务费</th><th>占比</th></tr></thead><tbody>${arr.map((t,i)=>{
     const r=i<3?`r${i+1}`:'rn'; const ratio=(t.amount/max*100).toFixed(0);
-    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td><span class="tag tag-blue">${esc(t.channel||'-')}</span></td><td>${t.count}单</td><td>${t.products.size}</td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td class="text-r">${fmtMoney(t.service)}</td><td><span class="mini-bar" style="width:${ratio*0.6}px"></span>${ratio}%</td></tr>`;
+    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td><span class="tag tag-blue">${esc(t.channel||'-')}</span></td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td>${t.count}单</td><td>${t.products.size}</td><td class="text-r">${fmtMoney(t.service)}</td><td><span class="mini-bar" style="width:${ratio*0.6}px"></span>${ratio}%</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
@@ -1790,9 +2028,9 @@ function renderZSRankTable(orders){
   orders.forEach(o=>{ const n=getZhaoshang(o)||'未分配'; if(!map[n]) map[n]={name:n,talents:new Set(),count:0,amount:0,service:0,products:new Set()}; map[n].talents.add(o.talentName); map[n].count++; map[n].amount+=getAmount(o); map[n].service+=getServiceFee(o); if(o.productId) map[n].products.add(o.productId); });
   const arr=Object.values(map).sort((a,b)=>b.amount-a.amount);
   if(!arr.length){ document.getElementById('zsRankTable').innerHTML=emptyHTML('暂无招商数据'); return; }
-  document.getElementById('zsRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>招商</th><th>达人数</th><th>商品数</th><th>出单</th><th>销售额</th><th>服务费</th></tr></thead><tbody>${arr.map((t,i)=>{
+  document.getElementById('zsRankTable').innerHTML=`<table><thead><tr><th>排名</th><th>招商</th><th>销售额</th><th>达人数</th><th>商品数</th><th>出单</th><th>服务费</th></tr></thead><tbody>${arr.map((t,i)=>{
     const r=i<3?`r${i+1}`:'rn';
-    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td>${t.talents.size}</td><td>${t.products.size}</td><td>${t.count}单</td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td class="text-r">${fmtMoney(t.service)}</td></tr>`;
+    return `<tr><td><span class="ranking ${r}">${i+1}</span></td><td><b>${esc(t.name)}</b></td><td class="text-r"><b>${fmtMoney(t.amount)}</b></td><td>${t.talents.size}</td><td>${t.products.size}</td><td>${t.count}单</td><td class="text-r">${fmtMoney(t.service)}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
@@ -1830,12 +2068,27 @@ function renderInsights(orders, prevOrders, period){
 }
 
 // ===================== Orders =====================
-function renderOrders(){
+function debouncedRenderOrders(){
+  clearTimeout(_orderSearchTimer);
+  _orderSearchTimer = setTimeout(() => { _orderCurrentPage = 1; renderOrders(); }, 300);
+}
+function debouncedRenderTalents(){
+  clearTimeout(_talentSearchTimer);
+  _talentSearchTimer = setTimeout(() => { _talentCurrentPage = 1; renderTalents(); }, 300);
+}
+function _orderGoPage(page){ _orderCurrentPage = page; renderOrders(false); }
+function _talentGoPage(page){ _talentCurrentPage = page; renderTalents(false); }
+
+function renderOrders(resetPage){
+  if(resetPage === undefined) resetPage = true;
+  if(resetPage){
+    _orderCurrentPage = 1;
+    pendingMappings = {};
+    pendingProductMappings = {};
+    const orderSaveBtn = document.getElementById('orderSaveMappingBtn');
+    if(orderSaveBtn) orderSaveBtn.style.display = 'none';
+  }
   populateFilters();
-  pendingMappings = {};
-  pendingProductMappings = {};
-  const orderSaveBtn = document.getElementById('orderSaveMappingBtn');
-  if(orderSaveBtn) orderSaveBtn.style.display = 'none';
   const search=(document.getElementById('orderSearch').value||'').toLowerCase();
   const fc=document.getElementById('filterChannel').value, fz=document.getElementById('filterZS').value;
   const period=document.getElementById('filterPeriod').value;
@@ -1846,14 +2099,38 @@ function renderOrders(){
   if(fz) orders=orders.filter(o=>getZhaoshang(o)===fz);
   if(fa==='assigned') orders=orders.filter(o=>getChannel(o)&&getZhaoshang(o));
   if(fa==='unassigned') orders=orders.filter(o=>!getChannel(o)||!getZhaoshang(o));
-  orders.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  if(!orders.length){ document.getElementById('ordersTable').innerHTML=emptyHTML('暂无出单记录'); document.getElementById('ordersSummary').textContent=''; return; }
+  orders.sort((a,b)=>{
+    const ta=a.payTimeStr||a.date||'';
+    const tb=b.payTimeStr||b.date||'';
+    return tb.localeCompare(ta);
+  });
+
+  // 汇总（全量，不只是当前页）
+  const totalAmt=orders.reduce((s,o)=>s+getAmount(o),0);
+  const totalService=orders.reduce((s,o)=>s+getServiceFee(o),0);
+  document.getElementById('ordersSummary').innerHTML=`共 <b>${orders.length}</b> 条记录 | 合计销售额 <b>${fmtMoney(totalAmt)}</b> | 服务费 <b>${fmtMoney(totalService)}</b>`;
+
+  if(!orders.length){
+    document.getElementById('ordersTable').innerHTML=emptyHTML('暂无出单记录');
+    document.getElementById('ordersPagination').innerHTML='';
+    return;
+  }
+
+  // 分页：只渲染当前页
+  const totalPages = Math.ceil(orders.length / ORDER_PAGE_SIZE);
+  if(_orderCurrentPage > totalPages) _orderCurrentPage = totalPages;
+  if(_orderCurrentPage < 1) _orderCurrentPage = 1;
+  const pageStart = (_orderCurrentPage - 1) * ORDER_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + ORDER_PAGE_SIZE, orders.length);
+  const pageOrders = orders.slice(pageStart, pageEnd);
+
+  // 缓存全量订单索引用于 onchange 回调
+  window._orderRows = orders;
   const editable = canEdit();
   const channels=[...new Set([...(state.personnel?.channels||[]).map(p=>p.name), ...state.talents.map(t=>t.channel), ...Object.values(state.mapping).map(m=>m.channel)].filter(Boolean))];
   const zsList=[...new Set([...(state.personnel?.zhaoshangs||[]).map(p=>p.name), ...state.talents.map(t=>t.zhaoshang), ...Object.values(state.mapping).map(m=>m.zhaoshang)].filter(Boolean))];
-  // 缓存订单索引用于 onchange 回调
-  window._orderRows = orders;
-  document.getElementById('ordersTable').innerHTML=`<table><thead><tr><th>日期</th><th>达人</th><th>商品</th><th>渠道${editable?' ✏️':''}</th><th>招商${editable?' ✏️':''}</th><th class="text-r">订单数</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody>${orders.map((o,idx)=>{
+  document.getElementById('ordersTable').innerHTML=`<table><thead><tr><th>出单时间</th><th>达人</th><th>商品</th><th>渠道${editable?' ✏️':''}</th><th>招商${editable?' ✏️':''}</th><th class="text-r">订单数</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>状态</th><th>来源</th><th>操作</th></tr></thead><tbody>${pageOrders.map((o,localIdx)=>{
+    const idx = pageStart + localIdx; // 全局索引，用于 markOrderMappingChanged
     const sourceTag = o.source==='api' ? '<span class="tag tag-green">API</span>' : `<span class="tag tag-gray">手动${o.operator?' · '+esc(o.operator):''}</span>`;
     const statusTag = o.commissionStatus ? (o.commissionStatus==='已结算'?'<span class="tag tag-green">已结算</span>':o.commissionStatus==='未结算'?'<span class="tag tag-orange">未结算</span>':'<span class="tag tag-red">取消</span>') : '-';
     const prodImg = o.productImg ? `<img class="product-thumb" src="${esc(o.productImg)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt=""><div class="product-thumb-placeholder" style="display:none">📦</div>` : `<div class="product-thumb-placeholder">📦</div>`;
@@ -1867,11 +2144,24 @@ function renderOrders(){
     const zsCell = editable
       ? `<select class="inline-edit" onchange="markOrderMappingChanged(${idx},'zhaoshang',this.value)" style="width:110px"><option value="">-</option>${zsList.map(z=>`<option value="${esc(z)}" ${z===curZs?'selected':''}>${esc(z)}</option>`).join('')}</select>`
       : `<span class="tag tag-purple">${esc(curZs)||'-'}</span>`;
-    return `<tr><td>${o.date||'-'}</td><td><b>${esc(o.talentName)}</b></td><td>${prodCell}</td><td>${chCell}</td><td>${zsCell}</td><td class="text-r">${getOrderCount(o)}</td><td class="text-r"><b>${fmtMoney(getAmount(o))}</b></td><td class="text-r">${getServiceFee(o)?fmtMoney(getServiceFee(o)):'-'}</td><td class="text-r">${getCommission(o)?fmtMoney(getCommission(o)):'-'}</td><td>${statusTag}</td><td>${sourceTag}</td><td>${o.source==='api'||!canEdit()?'-':`<button class="btn btn-outline btn-sm" onclick="openOrderModal('${o.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">删除</button>`}</td></tr>`;
+    const timeCell = o.payTimeStr
+      ? `<div style="white-space:nowrap"><span style="font-size:11px;color:var(--muted)">${esc(o.payTimeStr.slice(0,5))}</span> <b>${esc(o.payTimeStr.slice(5,16))}</b></div>`
+      : `<span>${esc(o.date||'-')}</span>`;
+    return `<tr><td>${timeCell}</td><td><b>${esc(o.talentName)}</b></td><td>${prodCell}</td><td>${chCell}</td><td>${zsCell}</td><td class="text-r">${getOrderCount(o)}</td><td class="text-r"><b>${fmtMoney(getAmount(o))}</b></td><td class="text-r">${getServiceFee(o)?fmtMoney(getServiceFee(o)):'-'}</td><td class="text-r">${getCommission(o)?fmtMoney(getCommission(o)):'-'}</td><td>${statusTag}</td><td>${sourceTag}</td><td>${o.source==='api'||!canEdit()?'-':`<button class="btn btn-outline btn-sm" onclick="openOrderModal('${o.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">删除</button>`}</td></tr>`;
   }).join('')}</tbody></table>`;
-  const totalAmt=orders.reduce((s,o)=>s+getAmount(o),0);
-  const totalService=orders.reduce((s,o)=>s+getServiceFee(o),0);
-  document.getElementById('ordersSummary').innerHTML=`共 <b>${orders.length}</b> 条记录 | 合计销售额 <b>${fmtMoney(totalAmt)}</b> | 服务费 <b>${fmtMoney(totalService)}</b>`;
+
+  // 分页控件
+  const pagEl = document.getElementById('ordersPagination');
+  if(totalPages > 1){
+    pagEl.innerHTML = `<button class="btn btn-outline btn-sm" onclick="_orderGoPage(${_orderCurrentPage-1})" ${_orderCurrentPage<=1?'disabled':''}>上一页</button>
+      <span class="page-info">第 ${_orderCurrentPage} / ${totalPages} 页（${pageStart+1}-${pageEnd} / ${orders.length} 条）</span>
+      <button class="btn btn-outline btn-sm" onclick="_orderGoPage(${_orderCurrentPage+1})" ${_orderCurrentPage>=totalPages?'disabled':''}>下一页</button>
+      <select class="input btn-sm" onchange="_orderGoPage(parseInt(this.value))" style="width:auto">
+        ${Array.from({length:Math.min(totalPages,200)},(_,i)=>`<option value="${i+1}" ${i+1===_orderCurrentPage?'selected':''}>${i+1}</option>`).join('')}
+      </select>`;
+  } else {
+    pagEl.innerHTML = '';
+  }
 }
 
 function markOrderMappingChanged(idx, field, value){
@@ -1881,7 +2171,9 @@ function markOrderMappingChanged(idx, field, value){
   const productId = o.productId || '';
   if(productId){
     const pkey = talentName + '|' + productId;
-    if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = { channel: '', zhaoshang: '' };
+    // 只记录被修改的字段；保存时按字段合并（saveOrderMappings），未修改字段不会被写入
+    // 不再用达人级值预填充——那会把旧值固化成商品级映射，遮蔽之后达人级的重新分配
+    if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = {};
     pendingProductMappings[pkey][field] = value;
   } else {
     if(!pendingMappings[talentName]) pendingMappings[talentName] = { channel: state.mapping[talentName]?.channel || '', zhaoshang: state.mapping[talentName]?.zhaoshang || '' };
@@ -1900,7 +2192,12 @@ function saveOrderMappings(){
     state.mapping[name] = val;
     const t = state.talents.find(x=>x.name===name); if(t){ t.channel=val.channel; t.zhaoshang=val.zhaoshang; }
   });
-  pEntries.forEach(([pkey, val]) => { state.productMapping[pkey] = val; });
+  pEntries.forEach(([pkey, val]) => {
+    // 合并而非覆盖：只更新已修改的字段，保留未修改的字段
+    if(!state.productMapping[pkey]) state.productMapping[pkey] = {};
+    if(val.channel !== undefined) state.productMapping[pkey].channel = val.channel;
+    if(val.zhaoshang !== undefined) state.productMapping[pkey].zhaoshang = val.zhaoshang;
+  });
   saveLocalState();
   debouncedCloudUpload();
   autoSaveCloudConfig();
@@ -1938,7 +2235,7 @@ function openOrderModal(id){
     document.getElementById('oProductImg').value=o.productImg||'';
     document.getElementById('oCount').value=o.orderCount||'';
     document.getElementById('oAmount').value=getAmount(o)||'';
-    document.getElementById('oServiceFee').value=getServiceFee(o)||'';
+    document.getElementById('oServiceFee').value=(Number(o.serviceFee)||Number(o.serviceAmount)||0)||'';
     document.getElementById('oRate').value=getCommissionRate(o)||'';
     document.getElementById('oCommission').value=getCommission(o)||'';
     document.getElementById('oNote').value=o.note||'';
@@ -1996,24 +2293,23 @@ function saveOrder(){
 function deleteOrder(id){ if(!confirm('确认删除这条出单记录？')) return; state.orders=state.orders.filter(o=>o.id!==id); saveLocalState(); debouncedCloudUpload(); renderOrders(); toast('已删除','success'); }
 
 // ===================== Talents (Enhanced with inline mapping) =====================
-function renderTalents(){
+function renderTalents(resetPage){
+  if(resetPage === undefined) resetPage = true;
+  if(resetPage) _talentCurrentPage = 1;
   const search=(document.getElementById('talentSearch').value||'').toLowerCase();
   const fa=document.getElementById('talentFilterAssign').value;
   let talents=state.talents.filter(t=>!search||t.name.toLowerCase().includes(search));
   if(fa==='assigned') talents=talents.filter(t=>{
-    const ch=state.mapping[t.name]?.channel||t.channel||'';
-    const zs=state.mapping[t.name]?.zhaoshang||t.zhaoshang||'';
-    return ch&&zs;
+    const info=getTalentDisplayInfo(t.name);
+    return info.displayChannel&&info.displayZS;
   });
   if(fa==='unassigned') talents=talents.filter(t=>{
-    const ch=state.mapping[t.name]?.channel||t.channel||'';
-    const zs=state.mapping[t.name]?.zhaoshang||t.zhaoshang||'';
-    return !ch||!zs;
+    const info=getTalentDisplayInfo(t.name);
+    return !info.displayChannel||!info.displayZS;
   });
   talents.sort((a,b)=>a.name.localeCompare(b.name,'zh'));
-  pendingMappings = {};
-  document.getElementById('saveMappingBtn').style.display = 'none';
-  if(!talents.length){ document.getElementById('talentsTable').innerHTML=emptyHTML('暂无达人'); document.getElementById('talentHint').textContent=''; return; }
+  if(resetPage){ pendingMappings = {}; document.getElementById('saveMappingBtn').style.display = 'none'; }
+  if(!talents.length){ document.getElementById('talentsTable').innerHTML=emptyHTML('暂无达人'); document.getElementById('talentHint').textContent=''; document.getElementById('talentsPagination').innerHTML=''; return; }
   const stats={};
   state.orders.forEach(o=>{ const n=o.talentName; if(!stats[n]) stats[n]={count:0,amount:0,service:0,comm:0}; stats[n].count++; stats[n].amount+=getAmount(o); stats[n].service+=getServiceFee(o); stats[n].comm+=getCommission(o); });
 
@@ -2027,23 +2323,47 @@ function renderTalents(){
     return `<select class="inline-edit" onchange="${onchange}" style="width:130px" ${editable?'':'disabled'}>${opts}</select>`;
   }
 
+  // 渲染渠道/招商单元格：有商品级映射 → 显示计算结果(名称或"已分配")，否则用下拉框
+  function renderMappingCell(type, info, options, talentName){
+    const fromProduct = type === 'channel' ? info.channelFromProduct : info.zsFromProduct;
+    const val = type === 'channel' ? info.displayChannel : info.displayZS;
+    const tagClass = type === 'channel' ? 'tag-blue' : 'tag-purple';
+    const escName = esc(talentName);
+
+    if(fromProduct){
+      // 有商品级分配，显示标签（可点击进入商品分配弹窗）
+      const isMixed = val === '已分配';
+      const style = isMixed ? 'tag-orange' : tagClass;
+      const display = isMixed ? '📦 已分配' : '📦 ' + esc(val);
+      return `<span class="tag ${style}" style="cursor:pointer" onclick="openProductAssign('${escName}')" title="点击查看/修改商品分配">${display}</span>`;
+    }
+    if(editable){
+      const onchange = `markMappingChanged('${escName}','${type}',this.value)`;
+      return makeSelect(options, val, type==='channel'?'选择渠道':'选择招商', onchange);
+    }
+    return `<span class="tag ${tagClass}">${esc(val)||'-'}</span>`;
+  }
+
+  // 分页
+  const totalPages = Math.ceil(talents.length / TALENT_PAGE_SIZE);
+  if(_talentCurrentPage > totalPages) _talentCurrentPage = totalPages;
+  if(_talentCurrentPage < 1) _talentCurrentPage = 1;
+  const pageStart = (_talentCurrentPage - 1) * TALENT_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + TALENT_PAGE_SIZE, talents.length);
+  const pageTalents = talents.slice(pageStart, pageEnd);
+
   document.getElementById('talentsTable').innerHTML=`<table><thead><tr>
     <th>达人名称</th><th>渠道${editable?'（可编辑）':''}</th><th>招商${editable?'（可编辑）':''}</th><th>类型</th><th>出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th>操作</th>
-  </tr></thead><tbody>${talents.map(t=>{
+  </tr></thead><tbody>${pageTalents.map(t=>{
     const s=stats[t.name]||{count:0,amount:0,service:0,comm:0};
-    const curChannel = state.mapping[t.name]?.channel || t.channel || '';
-    const curZS = state.mapping[t.name]?.zhaoshang || t.zhaoshang || '';
+    const info = getTalentDisplayInfo(t.name);
     const typeTag = t.talentType==='finder'?'<span class="tag tag-blue">视频号</span>':t.talentType==='talent'?'<span class="tag tag-green">带货者</span>':t.talentType==='sharer'?'<span class="tag tag-orange">推客</span>':'<span class="tag tag-gray">手动</span>';
-    const channelSel = editable 
-      ? makeSelect(channels, curChannel, '选择渠道', `markMappingChanged('${esc(t.name)}','channel',this.value)`)
-      : `<span class="tag tag-blue">${esc(curChannel)||'-'}</span>`;
-    const zsSel = editable
-      ? makeSelect(zsList, curZS, '选择招商', `markMappingChanged('${esc(t.name)}','zhaoshang',this.value)`)
-      : `<span class="tag tag-purple">${esc(curZS)||'-'}</span>`;
+    const channelCell = renderMappingCell('channel', info, channels, t.name);
+    const zsCell = renderMappingCell('zhaoshang', info, zsList, t.name);
     return `<tr>
       <td><b>${esc(t.name)}</b></td>
-      <td>${channelSel}</td>
-      <td>${zsSel}</td>
+      <td>${channelCell}</td>
+      <td>${zsCell}</td>
       <td>${typeTag}</td>
       <td>${s.count}单</td>
       <td class="text-r"><b>${fmtMoney(s.amount)}</b></td>
@@ -2052,9 +2372,23 @@ function renderTalents(){
       <td>${editable?`<button class="btn btn-outline btn-sm" onclick="openProductAssign('${esc(t.name)}')">📦 商品分配</button> <button class="btn btn-outline btn-sm" onclick="openTalentModal('${t.id||''}')">详情</button>`:'-'}</td>
     </tr>`;
   }).join('')}</tbody></table>`;
-  document.getElementById('talentHint').textContent = editable 
-    ? (Server.connected ? '💡 直接在表格中修改渠道和招商，修改后点击「保存渠道/招商修改」按钮保存到服务器' : '💡 修改渠道和招商后点击「保存渠道/招商修改」按钮保存')
+  document.getElementById('talentHint').textContent = editable
+    ? (Server.connected ? '💡 直接在表格中修改渠道和招商（达人级），或点击「商品分配」按商品单独指定。商品分配后会自动显示在渠道/招商列' : '💡 修改渠道和招商后点击「保存渠道/招商修改」按钮保存')
     : '💡 当前为只读模式，仅管理人员可修改渠道和招商分配';
+
+  // 分页控件
+  const pagEl = document.getElementById('talentsPagination');
+  if(!pagEl) return;
+  if(totalPages > 1){
+    pagEl.innerHTML = `<button class="btn btn-outline btn-sm" onclick="_talentGoPage(${_talentCurrentPage-1})" ${_talentCurrentPage<=1?'disabled':''}>上一页</button>
+      <span class="page-info">第 ${_talentCurrentPage} / ${totalPages} 页（${pageStart+1}-${pageEnd} / ${talents.length} 条）</span>
+      <button class="btn btn-outline btn-sm" onclick="_talentGoPage(${_talentCurrentPage+1})" ${_talentCurrentPage>=totalPages?'disabled':''}>下一页</button>
+      <select class="input btn-sm" onchange="_talentGoPage(parseInt(this.value))" style="width:auto">
+        ${Array.from({length:Math.min(totalPages,200)},(_,i)=>`<option value="${i+1}" ${i+1===_talentCurrentPage?'selected':''}>${i+1}</option>`).join('')}
+      </select>`;
+  } else {
+    pagEl.innerHTML = '';
+  }
 }
 
 function markMappingChanged(talentName, field, value){
@@ -2160,7 +2494,8 @@ function openProductAssign(talentName){
 
 function markProductMappingChanged(talentName, productId, field, value){
   const pkey = talentName + '|' + productId;
-  if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = { channel: '', zhaoshang: '' };
+  // 只记录被修改的字段；保存时按字段合并，未修改字段不会被写入（防止旧值固化成商品级映射）
+  if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = {};
   pendingProductMappings[pkey][field] = value;
 }
 
@@ -2169,23 +2504,90 @@ function saveProductAssign(){
   if(!entries.length){ toast('没有修改需要保存','info'); return; }
   if(!state.productMapping) state.productMapping = {};
   entries.forEach(([pkey, val]) => {
-    state.productMapping[pkey] = val;
+    // 合并而非覆盖：只更新已修改的字段，保留未修改的字段
+    if(!state.productMapping[pkey]) state.productMapping[pkey] = {};
+    if(val.channel !== undefined) state.productMapping[pkey].channel = val.channel;
+    if(val.zhaoshang !== undefined) state.productMapping[pkey].zhaoshang = val.zhaoshang;
   });
   saveLocalState();
   debouncedCloudUpload();
+  autoSaveCloudConfig();
   toast(`已保存 ${entries.length} 条商品级分配`,'success');
   pendingProductMappings = {};
   document.getElementById('productAssignModal').classList.remove('show');
   renderTalents();
 }
 // ===================== Daily Stats =====================
-function renderDaily(){
-  const dateVal = document.getElementById('dailyDate').value;
+function populateDailyUserFilter(){
+  const sel = document.getElementById('dailyUserFilter');
+  if(!sel) return;
+  const isManager = canEdit();
+  // 关键修复：重建选项前先记住用户当前选中的值，重建后优先恢复它
+  // （之前用 dataset.prev 恢复，但 onchange 时 dataset.prev 还是旧值，导致刚选的人被弹回）
+  const curVal = sel.value || '';
+  // 人员 = 人员管理里的渠道/招商人员 + 订单里实际出现过的渠道/招商名
+  const chSet = new Set(), zsSet = new Set();
+  (state.personnel && state.personnel.channels || []).forEach(p => { if(p && p.name) chSet.add(p.name); });
+  (state.personnel && state.personnel.zhaoshangs || []).forEach(p => { if(p && p.name) zsSet.add(p.name); });
+  state.orders.forEach(o => {
+    const c = getChannel(o); if(c && c !== '未分配') chSet.add(c);
+    const z = getZhaoshang(o); if(z && z !== '未分配') zsSet.add(z);
+  });
+  // 双重身份（既是渠道又是招商）的人：同时出现在渠道组和招商组，点哪组就看哪条线的业绩
+  const chList = [...chSet].sort((a,b)=>a.localeCompare(b,'zh'));
+  const zsList = [...zsSet].sort((a,b)=>a.localeCompare(b,'zh'));
+  let html = '';
+  if(isManager){
+    html += '<option value="all">🏢 公司整体</option>';
+    html += '<option value="me">👤 我的数据</option>';
+    if(chList.length) html += '<optgroup label="📡 渠道人员">' + chList.map(c => `<option value="ch:${esc(c)}">📡 ${esc(c)}</option>`).join('') + '</optgroup>';
+    if(zsList.length) html += '<optgroup label="💼 招商人员">' + zsList.filter(z=>z!==currentUser).map(z => `<option value="zs:${esc(z)}">💼 ${esc(z)}</option>`).join('') + '</optgroup>';
+  } else {
+    html = '<option value="me" selected>👤 我的数据</option>';
+  }
+  sel.innerHTML = html;
+  const prev = curVal || sel.dataset.prev || (isManager ? 'all' : 'me');
+  if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
+  else if(curVal === 'me' || sel.dataset.prev === 'me') sel.value = 'me';
+  // Show/hide "byPerson" mode for managers only
+  const modeSel = document.getElementById('dailyMode');
+  if(modeSel){
+    const personOpt = modeSel.querySelector('option[value="byPerson"]');
+    if(personOpt) personOpt.style.display = isManager ? '' : 'none';
+    if(!isManager && modeSel.value === 'byPerson'){ modeSel.value = 'byDate'; }
+  }
+}
+
+function getDailyFilteredOrders(){
+  populateDailyUserFilter();
+  const sel = document.getElementById('dailyUserFilter');
+  const userVal = sel ? sel.value : 'me';
+  if(sel) sel.dataset.prev = userVal;
+  let orders = [...state.orders];
+  if(userVal === 'me'){
+    // 我的数据 = 渠道或招商分配给我的订单 + 我手动录入的订单
+    orders = orders.filter(o => getZhaoshang(o) === currentUser || getChannel(o) === currentUser || o.operator === currentUser);
+  } else if(userVal === 'all'){
+    // 公司整体：不筛选
+  } else if(userVal.indexOf('p:') === 0){
+    // 按人员筛选：TA名下的订单，渠道归属或招商归属都算（支持一人兼任渠道+招商）
+    const n = userVal.slice(2);
+    orders = orders.filter(o => getChannel(o) === n || getZhaoshang(o) === n);
+  } else if(userVal.indexOf('ch:') === 0){
+    // 兼容旧值：仅按渠道归属
+    const n = userVal.slice(3);
+    orders = orders.filter(o => getChannel(o) === n);
+  } else if(userVal.indexOf('zs:') === 0){
+    // 按招商人员筛选
+    const n = userVal.slice(3);
+    orders = orders.filter(o => getZhaoshang(o) === n);
+  } else if(userVal){
+    // 兼容旧值（无前缀的招商名）
+    orders = orders.filter(o => getZhaoshang(o) === userVal);
+  }
   const startVal = document.getElementById('dailyStart').value;
   const endVal = document.getElementById('dailyEnd').value;
-  const mode = document.getElementById('dailyMode').value;
-
-  let orders = [...state.orders];
+  const dateVal = document.getElementById('dailyDate').value;
   if(startVal && endVal){
     orders = orders.filter(o => o.date >= startVal && o.date <= endVal);
   } else if(dateVal){
@@ -2194,66 +2596,164 @@ function renderDaily(){
     orders = orders.filter(o => o.date === todayStr());
     document.getElementById('dailyDate').value = todayStr();
   }
+  return orders;
+}
 
-  // Summary
+function getServiceFeeByStatus(o){
+  const fee = getServiceFee(o);
+  const st = o.commissionStatus || '';
+  if(st === '已结算') return { settled: fee, unsettled: 0, cancelled: 0, cancelledCnt: 0 };
+  if(st === '取消结算' || st === '取消') return { settled: 0, unsettled: 0, cancelled: fee, cancelledCnt: 1 };
+  return { settled: 0, unsettled: fee, cancelled: 0, cancelledCnt: 0 };
+}
+
+function renderDaily(){
+  const orders = getDailyFilteredOrders();
+  const mode = document.getElementById('dailyMode').value;
+
+  // Summary — settled/unsettled/cancelled breakdown
   const totalSales = orders.reduce((s,o)=>s+getAmount(o),0);
   const totalService = orders.reduce((s,o)=>s+getServiceFee(o),0);
   const totalComm = orders.reduce((s,o)=>s+getCommission(o),0);
   const talentSet = new Set(orders.map(o=>o.talentName));
+  const sf = orders.reduce((acc,o)=>{ const s=getServiceFeeByStatus(o); acc.settled+=s.settled; acc.unsettled+=s.unsettled; acc.cancelled+=s.cancelled; acc.cancelledCnt+=s.cancelledCnt; return acc; },{settled:0,unsettled:0,cancelled:0,cancelledCnt:0});
 
   document.getElementById('dailySummary').innerHTML = `
     <div class="stat-card"><div class="icon">💰</div><div class="label">销售额</div><div class="value">${fmtMoney(totalSales)}</div></div>
-    <div class="stat-card"><div class="icon">🏢</div><div class="label">服务费</div><div class="value">${fmtMoney(totalService)}</div></div>
-    <div class="stat-card"><div class="icon">🎯</div><div class="label">达人佣金</div><div class="value">${fmtMoney(totalComm)}</div></div>
-    <div class="stat-card"><div class="icon">📦</div><div class="label">出单数 / 达人数</div><div class="value">${orders.length} / ${talentSet.size}</div></div>`;
+    <div class="stat-card"><div class="icon">📦</div><div class="label">出单 / 达人数</div><div class="value">${orders.length} / ${talentSet.size}</div></div>
+    <div class="stat-card"><div class="icon">🏢</div><div class="label">服务费(总)</div><div class="value">${fmtMoney(totalService)}</div></div>
+    <div class="stat-card"><div class="icon">✅</div><div class="label">已结算服务费</div><div class="value">${fmtMoney(sf.settled)}</div></div>
+    <div class="stat-card"><div class="icon">⏳</div><div class="label">未结算服务费</div><div class="value">${fmtMoney(sf.unsettled)}</div></div>
+    <div class="stat-card"><div class="icon">❌</div><div class="label">取消结算(单量)</div><div class="value">${sf.cancelledCnt}单</div></div>`;
 
   if(!orders.length){ document.getElementById('dailyTable').innerHTML = emptyHTML('所选日期暂无出单数据'); return; }
 
-  if(mode === 'byTalent'){
+  if(mode === 'byPerson' && canEdit()){
+    // 按人员查看：渠道人员和招商人员都参与统计（按达人/商品的分配归属），按日期展开
+    const filterVal = (document.getElementById('dailyUserFilter')||{}).value || 'all';
+    const personMap = {};
+    const addOrder = (role, name, o) => {
+      const pName = name || '(未分配)';
+      const key = role + '|' + pName;
+      if(!personMap[key]) personMap[key] = { name:pName, role, days:{} };
+      const d = o.date;
+      if(!personMap[key].days[d]) personMap[key].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0, talents:new Set() };
+      personMap[key].days[d].count++;
+      personMap[key].days[d].amount += getAmount(o);
+      personMap[key].days[d].service += getServiceFee(o);
+      personMap[key].days[d].comm += getCommission(o);
+      personMap[key].days[d].talents.add(o.talentName);
+      const s = getServiceFeeByStatus(o);
+      personMap[key].days[d].settled += s.settled;
+      personMap[key].days[d].unsettled += s.unsettled;
+      personMap[key].days[d].cancelled += s.cancelled;
+      personMap[key].days[d].cancelledCnt += s.cancelledCnt;
+    };
+    orders.forEach(o => {
+      const zs = getZhaoshang(o), ch = getChannel(o);
+      if(filterVal.indexOf('p:') === 0){
+        // 已锁定某个人：TA名下的订单按实际归属分别计入（TA是招商的算招商业绩、是渠道的算渠道业绩）
+        const n = filterVal.slice(2);
+        if(zs === n) addOrder('招商', zs, o);
+        if(ch === n) addOrder('渠道', ch, o);
+      } else if(filterVal.indexOf('ch:') === 0){
+        // 兼容旧值：仅渠道业绩
+        if(ch === filterVal.slice(3)) addOrder('渠道', ch, o);
+      } else if(filterVal.indexOf('zs:') === 0){
+        // 兼容旧值：仅招商业绩
+        if(zs === filterVal.slice(3)) addOrder('招商', zs, o);
+      } else {
+        // 公司整体/我的数据：渠道、招商两条线都展示（同一订单会分别计入渠道和招商两人的业绩）
+        addOrder('招商', zs, o);
+        addOrder('渠道', ch, o);
+      }
+    });
+    const roleRank = { '渠道':0, '招商':1 };
+    const persons = Object.values(personMap).sort((a,b)=>{
+      const ba=Object.values(b.days).reduce((s,d)=>s+d.amount,0);
+      const aa=Object.values(a.days).reduce((s,d)=>s+d.amount,0);
+      return ba-aa || (roleRank[a.role]||9)-(roleRank[b.role]||9);
+    });
+    const roleTag = r => r === '渠道' ? '<span class="tag tag-blue">渠道</span>' : '<span class="tag tag-purple">招商</span>';
+    let html = `<table><thead><tr><th>人员</th><th>类型</th><th>日期</th><th class="text-r">出单</th><th class="text-r">达人</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>`;
+    persons.forEach(p => {
+      const days = Object.entries(p.days).sort((a,b)=>b[0].localeCompare(a[0]));
+      const tCount = days.reduce((s,[,d])=>s+d.count,0);
+      const tAmount = days.reduce((s,[,d])=>s+d.amount,0);
+      const tService = days.reduce((s,[,d])=>s+d.service,0);
+      const tSettled = days.reduce((s,[,d])=>s+d.settled,0);
+      const tUnsettled = days.reduce((s,[,d])=>s+d.unsettled,0);
+      const tCancelledCnt = days.reduce((s,[,d])=>s+d.cancelledCnt,0);
+      const tComm = days.reduce((s,[,d])=>s+d.comm,0);
+      const tTalents = new Set(); days.forEach(([,d])=>d.talents.forEach(t=>tTalents.add(t)));
+      days.forEach(([date, d], i) => {
+        html += `<tr${i===0?'':' style="border-top:1px solid #F3F4F6"'}>
+          ${i===0?`<td rowspan="${days.length}"><b>${esc(p.name)}</b></td><td rowspan="${days.length}">${roleTag(p.role)}</td>`:''}
+          <td>${date}</td><td class="text-r">${d.count}单</td><td class="text-r">${d.talents.size}</td><td class="text-r"><b>${fmtMoney(d.amount)}</b></td><td class="text-r">${d.service?fmtMoney(d.service):'-'}</td><td class="text-r" style="color:#10B981">${d.settled?fmtMoney(d.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${d.unsettled?fmtMoney(d.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${d.cancelledCnt?d.cancelledCnt+'单':'-'}</td><td class="text-r">${d.comm?fmtMoney(d.comm):'-'}</td></tr>`;
+      });
+      html += `<tr style="background:#F9FAFB;font-weight:600"><td>${esc(p.name)}</td><td>${roleTag(p.role)}</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${tTalents.size}</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(tSettled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(tUnsettled)}</td><td class="text-r" style="color:#EF4444">${tCancelledCnt}单</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
+    });
+    html += `<tr style="background:#EEF2FF;font-weight:700"><td colspan="3">总计（订单不重复计数）</td><td class="text-r">${orders.length}单</td><td class="text-r">${talentSet.size}</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${sf.cancelledCnt}单</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
+    html += `</tbody></table>`;
+    document.getElementById('dailyTable').innerHTML = html;
+  } else if(mode === 'byTalent'){
     // 按达人汇总，每位达人下按日期展开
     const talentMap = {};
     orders.forEach(o => {
       const n = o.talentName || '未知';
       if(!talentMap[n]) talentMap[n] = { name:n, channel:getChannel(o), zs:getZhaoshang(o), days:{} };
       const d = o.date;
-      if(!talentMap[n].days[d]) talentMap[n].days[d] = { count:0, amount:0, service:0, comm:0 };
+      if(!talentMap[n].days[d]) talentMap[n].days[d] = { count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0 };
       talentMap[n].days[d].count++;
       talentMap[n].days[d].amount += getAmount(o);
       talentMap[n].days[d].service += getServiceFee(o);
       talentMap[n].days[d].comm += getCommission(o);
+      const s = getServiceFeeByStatus(o);
+      talentMap[n].days[d].settled += s.settled;
+      talentMap[n].days[d].unsettled += s.unsettled;
+      talentMap[n].days[d].cancelled += s.cancelled;
+      talentMap[n].days[d].cancelledCnt += s.cancelledCnt;
     });
     const talents = Object.values(talentMap).sort((a,b)=>Object.values(b.days).reduce((s,d)=>s+d.amount,0)-Object.values(a.days).reduce((s,d)=>s+d.amount,0));
-    let html = `<table><thead><tr><th>达人</th><th>渠道</th><th>招商</th><th>日期</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>达人</th><th>渠道</th><th>招商</th><th>日期</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>`;
     talents.forEach(t => {
       const days = Object.entries(t.days).sort((a,b)=>b[0].localeCompare(a[0]));
       const tCount = days.reduce((s,[,d])=>s+d.count,0);
       const tAmount = days.reduce((s,[,d])=>s+d.amount,0);
       const tService = days.reduce((s,[,d])=>s+d.service,0);
+      const tSettled = days.reduce((s,[,d])=>s+d.settled,0);
+      const tUnsettled = days.reduce((s,[,d])=>s+d.unsettled,0);
+      const tCancelledCnt = days.reduce((s,[,d])=>s+d.cancelledCnt,0);
       const tComm = days.reduce((s,[,d])=>s+d.comm,0);
       days.forEach(([date, d], i) => {
         html += `<tr${i===0?'':' style="border-top:1px solid #F3F4F6"'}>
           ${i===0?`<td rowspan="${days.length}"><b>${esc(t.name)}</b></td><td rowspan="${days.length}"><span class="tag tag-blue">${esc(t.channel)||'-'}</span></td><td rowspan="${days.length}"><span class="tag tag-purple">${esc(t.zs)||'-'}</span></td>`:''}
-          <td>${date}</td><td class="text-r">${d.count}单</td><td class="text-r"><b>${fmtMoney(d.amount)}</b></td><td class="text-r">${d.service?fmtMoney(d.service):'-'}</td><td class="text-r">${d.comm?fmtMoney(d.comm):'-'}</td></tr>`;
+          <td>${date}</td><td class="text-r">${d.count}单</td><td class="text-r"><b>${fmtMoney(d.amount)}</b></td><td class="text-r">${d.service?fmtMoney(d.service):'-'}</td><td class="text-r" style="color:#10B981">${d.settled?fmtMoney(d.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${d.unsettled?fmtMoney(d.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${d.cancelledCnt?d.cancelledCnt+'单':'-'}</td><td class="text-r">${d.comm?fmtMoney(d.comm):'-'}</td></tr>`;
       });
-      html += `<tr style="background:#F9FAFB;font-weight:600"><td colspan="3">小计</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
+      html += `<tr style="background:#F9FAFB;font-weight:600"><td colspan="3">小计</td><td>-</td><td class="text-r">${tCount}单</td><td class="text-r">${fmtMoney(tAmount)}</td><td class="text-r">${fmtMoney(tService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(tSettled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(tUnsettled)}</td><td class="text-r" style="color:#EF4444">${tCancelledCnt}单</td><td class="text-r">${fmtMoney(tComm)}</td></tr>`;
     });
-    html += `<tr style="background:#EEF2FF;font-weight:700"><td colspan="3">总计</td><td>-</td><td class="text-r">${orders.length}单</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
+    html += `<tr style="background:#EEF2FF;font-weight:700"><td colspan="3">总计</td><td>-</td><td class="text-r">${orders.length}单</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${sf.cancelledCnt}单</td><td class="text-r">${fmtMoney(totalComm)}</td></tr>`;
     html += `</tbody></table>`;
     document.getElementById('dailyTable').innerHTML = html;
   } else {
-    // 按日期查看：每行一个订单或按达人+日期分组
+    // 按日期查看：按达人+日期分组
     const groupMap = {};
     orders.forEach(o => {
       const key = `${o.date}_${o.talentName}`;
-      if(!groupMap[key]) groupMap[key] = { date:o.date, name:o.talentName, channel:getChannel(o), zs:getZhaoshang(o), count:0, amount:0, service:0, comm:0, product:getProduct(o) };
+      if(!groupMap[key]) groupMap[key] = { date:o.date, name:o.talentName, channel:getChannel(o), zs:getZhaoshang(o), count:0, amount:0, service:0, settled:0, unsettled:0, cancelled:0, cancelledCnt:0, comm:0, product:getProduct(o) };
       groupMap[key].count++;
       groupMap[key].amount += getAmount(o);
       groupMap[key].service += getServiceFee(o);
       groupMap[key].comm += getCommission(o);
+      const s = getServiceFeeByStatus(o);
+      groupMap[key].settled += s.settled;
+      groupMap[key].unsettled += s.unsettled;
+      groupMap[key].cancelled += s.cancelled;
+      groupMap[key].cancelledCnt += s.cancelledCnt;
     });
     const rows = Object.values(groupMap).sort((a,b)=>b.date.localeCompare(a.date)||b.amount-a.amount);
-    document.getElementById('dailyTable').innerHTML = `<table><thead><tr><th>日期</th><th>达人</th><th>渠道</th><th>招商</th><th>商品</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">达人佣金</th><th class="text-r">净利</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.date}</td><td><b>${esc(r.name)}</b></td><td><span class="tag tag-blue">${esc(r.channel)||'-'}</span></td><td><span class="tag tag-purple">${esc(r.zs)||'-'}</span></td><td>${esc(r.product)||'-'}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`).join('')}
-    <tr style="background:#EEF2FF;font-weight:700"><td colspan="5">合计</td><td class="text-r">${orders.length}单</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r">${fmtMoney(totalComm)}</td><td class="text-r text-success">${fmtMoney(totalService-totalComm)}</td></tr></tbody></table>`;
+    document.getElementById('dailyTable').innerHTML = `<table><thead><tr><th>日期</th><th>达人</th><th>渠道</th><th>招商</th><th>商品</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">已结算</th><th class="text-r">未结算</th><th class="text-r">取消单量</th><th class="text-r">佣金</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.date}</td><td><b>${esc(r.name)}</b></td><td><span class="tag tag-blue">${esc(r.channel)||'-'}</span></td><td><span class="tag tag-purple">${esc(r.zs)||'-'}</span></td><td>${esc(r.product)||'-'}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r" style="color:#10B981">${r.settled?fmtMoney(r.settled):'-'}</td><td class="text-r" style="color:#F59E0B">${r.unsettled?fmtMoney(r.unsettled):'-'}</td><td class="text-r" style="color:#EF4444">${r.cancelledCnt?r.cancelledCnt+'单':'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td></tr>`).join('')}
+    <tr style="background:#EEF2FF;font-weight:700"><td colspan="5">合计</td><td class="text-r">${orders.length}单</td><td class="text-r">${fmtMoney(totalSales)}</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r" style="color:#10B981">${fmtMoney(sf.settled)}</td><td class="text-r" style="color:#F59E0B">${fmtMoney(sf.unsettled)}</td><td class="text-r" style="color:#EF4444">${sf.cancelledCnt}单</td><td class="text-r">${fmtMoney(totalComm)}</td></tr></tbody></table>`;
   }
 }
 
@@ -2374,7 +2874,7 @@ function renderChannelDailyRank(){
   let dateLabel = '';
   if(rankPeriod==='today'){ orders = orders.filter(o=>o.date===daysAgo(0)); isSingleDay=true; dateLabel=daysAgo(0); }
   else if(rankPeriod==='yesterday'){ orders = orders.filter(o=>o.date===daysAgo(1)); isSingleDay=true; dateLabel=daysAgo(1); }
-  else if(rankPeriod==='month'){ const d=new Date(); const monthStart=d.toISOString().slice(0,7)+'-01'; orders=orders.filter(o=>o.date>=monthStart); dateLabel=d.toISOString().slice(0,7); }
+  else if(rankPeriod==='month'){ orders=orders.filter(o=>o.date>=monthStartStr()); dateLabel=monthLabelStr(); }
   else { const days=parseInt(rankPeriod)||0; if(days){ orders=orders.filter(o=>o.date>=daysAgo(days)); dateLabel=`近${days}天`; } else { dateLabel='全部'; } }
   const container = document.getElementById('channelDailyRank');
   if(!orders.length){ container.innerHTML = emptyHTML('暂无出单数据'); return; }
@@ -2386,9 +2886,9 @@ function renderChannelDailyRank(){
   });
   const arr = Object.values(map).sort((a,b) => b.amount - a.amount);
   if(!arr.length){ container.innerHTML = emptyHTML('暂无渠道数据，请先为达人分配渠道'); return; }
-  container.innerHTML = `<table><thead><tr><th>排名</th><th>渠道人员</th><th>达人数</th><th>商品数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
+  container.innerHTML = `<table><thead><tr><th>排名</th><th>渠道人员</th><th class="text-r">销售额</th><th>达人数</th><th>商品数</th><th class="text-r">出单</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
     const rankTag = i < 3 ? `<span class="ranking r${i+1}">${i+1}</span>` : `<span class="ranking rn">${i+1}</span>`;
-    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td>${r.products.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
+    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td>${r.talents.size}</td><td>${r.products.size}</td><td class="text-r">${r.count}单</td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
@@ -2397,7 +2897,7 @@ function renderZSDailyRank(){
   let orders = state.orders;
   if(rankPeriod==='today') orders = orders.filter(o=>o.date===daysAgo(0));
   else if(rankPeriod==='yesterday') orders = orders.filter(o=>o.date===daysAgo(1));
-  else if(rankPeriod==='month'){ const d=new Date(); const monthStart=d.toISOString().slice(0,7)+'-01'; orders=orders.filter(o=>o.date>=monthStart); }
+  else if(rankPeriod==='month'){ orders=orders.filter(o=>o.date>=monthStartStr()); }
   else { const days=parseInt(rankPeriod)||0; if(days) orders=orders.filter(o=>o.date>=daysAgo(days)); }
   const container = document.getElementById('zsDailyRank');
   if(!orders.length){ container.innerHTML = emptyHTML('暂无出单数据'); return; }
@@ -2409,9 +2909,9 @@ function renderZSDailyRank(){
   });
   const arr = Object.values(map).sort((a,b) => b.amount - a.amount);
   if(!arr.length){ container.innerHTML = emptyHTML('暂无招商数据，请先为达人分配招商'); return; }
-  container.innerHTML = `<table><thead><tr><th>排名</th><th>招商人员</th><th>达人数</th><th>商品数</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
+  container.innerHTML = `<table><thead><tr><th>排名</th><th>招商人员</th><th class="text-r">销售额</th><th>达人数</th><th>商品数</th><th class="text-r">出单</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">净利</th></tr></thead><tbody>${arr.map((r,i) => {
     const rankTag = i < 3 ? `<span class="ranking r${i+1}">${i+1}</span>` : `<span class="ranking rn">${i+1}</span>`;
-    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td>${r.talents.size}</td><td>${r.products.size}</td><td class="text-r">${r.count}单</td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
+    return `<tr><td>${rankTag}</td><td><b>${esc(r.name)}</b></td><td class="text-r"><b>${fmtMoney(r.amount)}</b></td><td>${r.talents.size}</td><td>${r.products.size}</td><td class="text-r">${r.count}单</td><td class="text-r">${r.service?fmtMoney(r.service):'-'}</td><td class="text-r">${r.comm?fmtMoney(r.comm):'-'}</td><td class="text-r text-success">${r.service?fmtMoney(r.service-r.comm):'-'}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 
@@ -2461,6 +2961,8 @@ function savePersonnel(){
     if(state.personnel[key].find(x => x.name === name)){ toast('该姓名已存在','error'); return; }
     data.id = uid();
     state.personnel[key].push(data);
+    // 如果之前删除过同名人员，清除删除记录（允许重新添加）
+    if(state._deleted?.[key]?.[name]) delete state._deleted[key][name];
   }
   savePersonnelData();
   closePersonnelModal();
@@ -2472,14 +2974,48 @@ function savePersonnel(){
 function deletePersonnel(type, id){
   if(!canEdit()){ toast('仅管理人员可操作','error'); return; }
   const key = type === 'channel' ? 'channels' : 'zhaoshangs';
+  const field = type === 'channel' ? 'channel' : 'zhaoshang';
   const list = state.personnel?.[key] || [];
   const p = list.find(x => x.id === id);
   if(!p) return;
-  if(!confirm(`确认删除${type==='channel'?'渠道':'招商'}人员「${p.name}」？\n已关联的达人不会被删除，但需要重新分配。`)) return;
+  // 统计关联的达人和商品映射数
+  let talentCount = 0, mappingCount = 0, prodMappingCount = 0;
+  (state.talents||[]).forEach(t => { if(t[field] === p.name) talentCount++; });
+  Object.values(state.mapping||{}).forEach(m => { if(m[field] === p.name) mappingCount++; });
+  Object.values(state.productMapping||{}).forEach(m => { if(m[field] === p.name) prodMappingCount++; });
+  const totalLinks = talentCount + mappingCount + prodMappingCount;
+  const msg = totalLinks > 0
+    ? `确认删除${type==='channel'?'渠道':'招商'}人员「${p.name}」？\n\n将自动清理以下关联：\n• ${talentCount} 个达人的${type==='channel'?'渠道':'招商'}分配\n• ${mappingCount} 条达人映射\n• ${prodMappingCount} 条商品映射`
+    : `确认删除${type==='channel'?'渠道':'招商'}人员「${p.name}」？`;
+  if(!confirm(msg)) return;
+  // 1. 从人员列表删除
   state.personnel[key] = list.filter(x => x.id !== id);
+  // 1b. 记录删除操作，用于跨设备同步删除
+  if(!state._deleted) state._deleted = { channels: {}, zhaoshangs: {}, users: {} };
+  if(!state._deleted[key]) state._deleted[key] = {};
+  state._deleted[key][p.name] = Date.now();
+  // 2. 清理达人中的渠道/招商分配
+  if(talentCount > 0){
+    (state.talents||[]).forEach(t => { if(t[field] === p.name) t[field] = ''; });
+  }
+  // 3. 清理达人映射
+  if(mappingCount > 0){
+    Object.keys(state.mapping||{}).forEach(name => {
+      if(state.mapping[name][field] === p.name) state.mapping[name][field] = '';
+    });
+  }
+  // 4. 清理商品映射
+  if(prodMappingCount > 0){
+    Object.keys(state.productMapping||{}).forEach(key2 => {
+      if(state.productMapping[key2][field] === p.name) state.productMapping[key2][field] = '';
+    });
+  }
   savePersonnelData();
+  saveLocalState();
   renderPersonnelTab();
-  toast('已删除','success');
+  // 刷新达人管理页面的下拉选项
+  if(typeof refreshCurrentTab === 'function') refreshCurrentTab();
+  toast(`已删除${type==='channel'?'渠道':'招商'}人员「${p.name}」${totalLinks > 0 ? `，已清理 ${totalLinks} 处关联` : ''}`,'success');
   autoSaveCloudConfig();
 }
 
@@ -2842,10 +3378,12 @@ function closeProductModal(){
 
 function markProductMappingChanged(talentName, productId, field, value){
   const pkey = talentName + '|' + productId;
+  // 只记录被修改的字段；保存时按字段合并，未修改字段不会被写入（防止旧值固化成商品级映射）
   if(!pendingProductMappings[pkey]) pendingProductMappings[pkey] = {};
   pendingProductMappings[pkey][field] = value;
   // 所有人都可以编辑，始终显示保存按钮
-  document.getElementById('saveProductMappingBtn').style.display = '';
+  const btn = document.getElementById('saveProductMappingBtn');
+  if(btn) btn.style.display = '';
 }
 
 async function saveProductMappings(){
@@ -2866,6 +3404,7 @@ async function saveProductMappings(){
   toast('商品渠道/招商分配已保存','success');
   closeProductModal();
   renderProducts();
+  renderTalents();
   autoSaveCloudConfig();
 }
 
@@ -2912,6 +3451,8 @@ function addUser(){
   if(name === ADMIN_NAME){ toast('管理员姓名不可使用','error'); return; }
   if(state.users[name]){ toast('该用户已存在','error'); return; }
   state.users[name] = { password: pwd, role };
+  // 如果之前删除过同名用户，清除删除记录（允许重新添加）
+  if(state._deleted?.users?.[name]) delete state._deleted.users[name];
   saveUsersData();
   document.getElementById('newUserName').value = '';
   document.getElementById('newUserPwd').value = '';
@@ -2948,6 +3489,9 @@ function deleteUser(name){
   if(name === ADMIN_NAME){ toast('管理员不可删除','error'); return; }
   if(!confirm(`确认删除用户「${name}」？`)) return;
   delete state.users[name];
+  // 记录删除操作，用于跨设备同步删除
+  if(!state._deleted) state._deleted = { channels: {}, zhaoshangs: {}, users: {} };
+  state._deleted.users[name] = Date.now();
   saveUsersData();
   renderUserList();
   toast(`已删除用户「${name}」`, 'success');
@@ -2975,8 +3519,8 @@ function renderAnaTable(elId, orders, key, label){
   const total=arr.reduce((s,x)=>s+x.amount,0);
   const totalService=arr.reduce((s,x)=>s+x.service,0);
   if(!arr.length){ document.getElementById(elId).innerHTML=emptyHTML('暂无数据'); return; }
-  document.getElementById(elId).innerHTML=`<table><thead><tr><th>${label}</th><th class="text-r">达人</th><th class="text-r">出单</th><th class="text-r">销售额</th><th class="text-r">占比</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">客单价</th></tr></thead><tbody>${arr.map(x=>{const ratio=total?(x.amount/total*100).toFixed(1):0;return `<tr><td><b>${esc(x.name)}</b></td><td class="text-r">${x.talentCount}</td><td class="text-r">${x.count}</td><td class="text-r"><b>${fmtMoney(x.amount)}</b></td><td class="text-r">${ratio}%</td><td class="text-r">${x.service?fmtMoney(x.service):'-'}</td><td class="text-r">${x.comm?fmtMoney(x.comm):'-'}</td><td class="text-r">${fmtMoney(x.avgAmount)}</td></tr>`;}).join('')}
-  <tr style="background:#F9FAFB;font-weight:600"><td>合计</td><td class="text-r">${arr.reduce((s,x)=>s+x.talentCount,0)}</td><td class="text-r">${arr.reduce((s,x)=>s+x.count,0)}</td><td class="text-r">${fmtMoney(total)}</td><td class="text-r">100%</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r">${fmtMoney(arr.reduce((s,x)=>s+x.comm,0))}</td><td class="text-r">${fmtMoney(arr.length?total/arr.reduce((s,x)=>s+x.count,0):0)}</td></tr></tbody></table>`;
+  document.getElementById(elId).innerHTML=`<table><thead><tr><th>${label}</th><th class="text-r">销售额</th><th class="text-r">达人</th><th class="text-r">出单</th><th class="text-r">占比</th><th class="text-r">服务费</th><th class="text-r">佣金</th><th class="text-r">客单价</th></tr></thead><tbody>${arr.map(x=>{const ratio=total?(x.amount/total*100).toFixed(1):0;return `<tr><td><b>${esc(x.name)}</b></td><td class="text-r"><b>${fmtMoney(x.amount)}</b></td><td class="text-r">${x.talentCount}</td><td class="text-r">${x.count}</td><td class="text-r">${ratio}%</td><td class="text-r">${x.service?fmtMoney(x.service):'-'}</td><td class="text-r">${x.comm?fmtMoney(x.comm):'-'}</td><td class="text-r">${fmtMoney(x.avgAmount)}</td></tr>`;}).join('')}
+  <tr style="background:#F9FAFB;font-weight:600"><td>合计</td><td class="text-r">${fmtMoney(total)}</td><td class="text-r">${arr.reduce((s,x)=>s+x.talentCount,0)}</td><td class="text-r">${arr.reduce((s,x)=>s+x.count,0)}</td><td class="text-r">100%</td><td class="text-r">${fmtMoney(totalService)}</td><td class="text-r">${fmtMoney(arr.reduce((s,x)=>s+x.comm,0))}</td><td class="text-r">${fmtMoney(arr.length?total/arr.reduce((s,x)=>s+x.count,0):0)}</td></tr></tbody></table>`;
 }
 function renderAnaTrendChart(orders, period){
   const days=parseInt(period)||0; const actualDays=days||30;
@@ -3087,9 +3631,9 @@ async function testConnection(){
 
 async function triggerSync(){
   if(!Server.connected){
-    if(githubDataLoaded){
-      toast('云端模式：如修改了人员/用户，请到「同步设置」点「保存配置到云端」','info');
-      switchTab('sync');
+    if(githubDataLoaded || isCloudMode){
+      // 云端模式：通过 GitHub API 直接触发 workflow_dispatch
+      await triggerCloudSync();
     } else {
       toast('同步服务未启动','error');
     }
@@ -3102,9 +3646,8 @@ async function triggerSync(){
 
 async function manualSync(){
   if(!Server.connected){
-    if(githubDataLoaded){
-      toast('云端模式：如修改了人员/用户，请到「同步设置」点「保存配置到云端」','info');
-      switchTab('sync');
+    if(githubDataLoaded || isCloudMode){
+      await triggerCloudSync();
     } else {
       toast('请先启动同步服务','error');
       switchTab('sync');
@@ -3112,6 +3655,64 @@ async function manualSync(){
     return;
   }
   await triggerSync();
+}
+
+// 云端手动触发同步：通过 GitHub API 触发 workflow_dispatch
+let _cloudSyncTriggering = false;
+async function triggerCloudSync(){
+  if(_cloudSyncTriggering){
+    toast('正在触发中，请稍候...','info');
+    return;
+  }
+  _cloudSyncTriggering = true;
+  const token = localStorage.getItem('gh_token') || _gt() || '';
+  if(!token){
+    toast('无法触发同步：缺少 GitHub Token，请联系管理员','error');
+    _cloudSyncTriggering = false;
+    return;
+  }
+  toast('正在触发云端同步...','info');
+  try {
+    const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/sync.yml/dispatches`;
+    const resp = await fetchWithFallback(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'token ' + token,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ref: 'main' })
+    });
+    if(resp.ok || resp.status === 204){
+      toast('✅ 同步已触发！数据约 2-10 分钟后更新，页面将自动刷新','success');
+      // 30秒后开始轮询数据更新
+      setTimeout(() => {
+        let pollCount = 0;
+        const poll = setInterval(async () => {
+          pollCount++;
+          if(pollCount > 40){ clearInterval(poll); return; } // 最多等10分钟
+          await loadData();
+          const metaTime = state._meta?.time;
+          if(metaTime){
+            const ageMin = (Date.now() - new Date(metaTime).getTime()) / 60000;
+            if(ageMin < 5){
+              clearInterval(poll);
+              toast('✅ 数据已更新！','success');
+              updateConnectionStatus();
+            }
+          }
+        }, 30000); // 每30秒检查一次（loadData内部用条件请求，数据未变时开销极小）
+      }, 30000);
+    } else {
+      let errMsg = '触发失败: ' + resp.status;
+      try { const err = await resp.json(); errMsg = err.message || errMsg; } catch(_){}
+      toast('❌ ' + errMsg,'error');
+    }
+  } catch(e) {
+    toast('❌ 触发同步失败: ' + e.message,'error');
+  } finally {
+    _cloudSyncTriggering = false;
+  }
 }
 
 async function syncProducts(){
@@ -3161,8 +3762,8 @@ document.addEventListener('click',e=>{ if(!e.target.closest('.dropdown')) docume
 
 function exportCSV(){
   if(!state.orders.length){ toast('暂无数据可导出','error'); return; }
-  const headers=['日期','达人名称','渠道','招商','商品','商品ID','订单数','销售额','服务费','佣金率(%)','佣金金额','佣金状态','来源','备注'];
-  const rows=state.orders.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(o=>[o.date,o.talentName,getChannel(o),getZhaoshang(o),getProduct(o),o.productId||'',getOrderCount(o),getAmount(o),getServiceFee(o),getCommissionRate(o),getCommission(o),o.commissionStatus||'',o.source||'手动',o.note||'']);
+  const headers=['出单时间','达人名称','渠道','招商','商品','商品ID','订单数','销售额','服务费','佣金率(%)','佣金金额','佣金状态','来源','备注'];
+  const rows=state.orders.sort((a,b)=>{const ta=a.payTimeStr||a.date||'',tb=b.payTimeStr||b.date||'';return ta.localeCompare(tb);}).map(o=>[o.payTimeStr||o.date||'',o.talentName,getChannel(o),getZhaoshang(o),getProduct(o),o.productId||'',getOrderCount(o),getAmount(o),getServiceFee(o),getCommissionRate(o),getCommission(o),o.commissionStatus||'',o.source||'手动',o.note||'']);
   const csv='\ufeff'+[headers,...rows].map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`出单数据_${todayStr()}.csv`; a.click(); URL.revokeObjectURL(a.href); toast('CSV已导出','success');
 }
@@ -3307,6 +3908,8 @@ async function init(){
     connectSSE();
   }
   await loadData();
+  // 加载后清理商品级映射冗余字段（一次性数据修正，幂等）
+  if(cleanupRedundantProductMappings()) saveLocalState();
   // 数据加载后重新更新连接状态（GitHub云端数据加载成功后显示"云端数据模式"）
   if(!Server.connected){
     await updateConnectionStatus();
@@ -3324,12 +3927,12 @@ async function init(){
     // 常规刷新：每5分钟重载一次获取最新数据
     setInterval(() => { window.location.reload(); }, 300000);
   } else if(isCloudMode){
-    // 云端模式：定期重新加载云端数据（每5分钟），让公司电脑也能自动看到最新数据
+    // 云端模式：定期重新加载云端数据（每5分钟）
+    // loadData 内部已用 no-cache + _meta.time 判断，数据未变时只发一个轻量条件请求(304)，不会下载/解析1.4MB
     setInterval(async () => {
       try {
         const prevCount = state.orders?.length || 0;
         const prevMetaTime = state._meta?.time || '';
-        githubDataLoaded = false;
         await loadData();
         await updateConnectionStatus();
         const newCount = state.orders?.length || 0;
@@ -3358,7 +3961,7 @@ async function init(){
           connectSSE();
         }
       }
-    }, 30000); // 云端模式下降低检查频率
+    }, 60000); // 云端模式下降低检查频率
   } else {
     // 离线模式下定期检查服务是否启动
     setInterval(async () => {
@@ -3374,7 +3977,7 @@ async function init(){
           connectSSE();
         }
       }
-    }, 10000);
+    }, 30000);
   }
   renderDashboard();
 }
@@ -3405,7 +4008,7 @@ init();
       .catch(function(){});
   }
   checkUpdate();
-  setInterval(checkUpdate,15000);
+  setInterval(checkUpdate,60000);
 })();
 </script>
 </body>
